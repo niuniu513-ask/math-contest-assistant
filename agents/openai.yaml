@@ -1,0 +1,4 @@
+interface:
+  display_name: "数学建模竞赛自主助手"
+  short_description: "完成赛题建模、确认后求解、验证、可视化与论文交付"
+  default_prompt: "Use $math-contest-assistant to analyze this modeling problem, present the model plan for my confirmation, then implement the approved plan with reproducible evidence."
