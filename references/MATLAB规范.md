@@ -1,13 +1,25 @@
 # MATLAB 实现规范
 
-MATLAB 与 Python 是同等支持的实现语言，不把 MATLAB 作为仅供参考的附录。本文件只收录 MATLAB 内置函数或已发布工具箱中的真实接口，不使用未随 skill 交付的脚本。
+MATLAB 与 Python 是同等支持的实现语言，不把 MATLAB 作为仅供参考的附录。本 skill 随附 4 个真实 MATLAB 脚本与 4 份 MATLAB 模板，MATLAB 路线可完整落地：
+
+- 模板：`references/MATLAB代码生成规范.md`（评价/优化/预测/微分方程/图论五类方法的完整骨架）、`references/MATLAB常见图表模式.md`、`references/MATLAB配色参考.md`、`references/MATLAB示意图绘制规范.md`
+- 脚本：`scripts/check_matlab_env.m`、`scripts/apply_publication_style.m`、`scripts/audit_publication_figure.m`、`scripts/export_publication_figure.m`
+
+## 脚本接入（一次性）
+
+把 `scripts/*.m` 复制到 `PROJECT_ROOT/utils/`，主脚本开头 `addpath(fullfile(projectRoot, "utils"))`（代码生成模板的通用骨架已包含该行）：
+
+```matlab
+projectRoot = fileparts(mfilename("fullpath"));
+addpath(fullfile(projectRoot, "utils"));
+```
 
 ## 环境与依赖
 
-用真实命令检查工具箱，不假设存在任何脚本：
+用随附 `scripts/check_matlab_env.m` 按功能检查工具箱：
 
-```text
-matlab -batch "disp(ver('Statistics_Toolbox')); disp(license('test','Optimization_Toolbox'))"
+```matlab
+report = check_matlab_env(["optimization", "statistics", "machine_learning", "time_series"]);
 ```
 
 | 功能 | 真实接口 | 所属 |
@@ -31,6 +43,7 @@ end
 rng(seed, "twister");
 
 projectRoot = fileparts(mfilename("fullpath"));
+addpath(fullfile(projectRoot, "utils"));
 data = readtable(fullfile(projectRoot, "data", "input.csv"));
 result = solveModel(data);
 writetable(result.table, fullfile(projectRoot, "results", "问题1_结果.csv"));
@@ -41,7 +54,7 @@ end
 - 随机算法调用 `rng(seed, "twister")`；`readtable`/`writetable` 走表，`readmatrix`/`writematrix` 走矩阵。
 - 优化结果必须检查 `exitflag`/`output.iterations` 与约束残差。
 - ≥3 个独立子问题按问题拆分函数文件（`q1.m`、`q2.m`…），主脚本只做调度，避免单文件堆积千行。
-- MATLAB 工具箱函数随版本更名（如 `zscore`、`TreeBagger` 在部分版本位于 Statistics Toolbox），`ver` 记录实际版本。
+- 完整骨架、分步模板与 Python↔MATLAB 对照速查见 `MATLAB代码生成规范.md`；工具箱函数随版本更名，`ver` 记录实际版本。
 
 ## 常用赛题流程的 MATLAB 配方
 
@@ -71,11 +84,13 @@ python "<SKILL_ROOT>/scripts/repro_manifest.py" `
 
 ## 出版级绘图
 
-- 统一中文字体与色觉友好配色在 `main` 开头用 `set(groot, "DefaultAxesFontName", "SimHei")` 等设置；绘图前完成数据剖析、单图核心结论与图表契约。
-- 导出用真实内置接口：`exportgraphics(fig, "fig.png", "Resolution", 300)`（R2020a+），可编辑源用 `print(fig, "-dsvg", "fig.svg")`；旧版本用 `print(fig, "-dpng", "-r300", "fig.png")`。
-- 导出后运行语言无关的 `figure_audit.py` 做结构与尺寸检查，再实际打开 PNG 检查缺字、刻度重叠、遮挡与多面板一致性。
-- 主结论与辅助证据信息量不同时用非对称 `tiledlayout`，不机械创建等宽双子图。
-- 确有数值意义的参考线用 `xline`/`yline` 并在图注说明，不调用 `grid on`。
+统一使用随附脚本，不把 MATLAB 当作低配可视化分支：
+
+1. `style = apply_publication_style(fig, "zh", "report", "profile", "competition")` — 统一中文字体、尺寸、竞赛获奖配色（`"competition"`）或 Nature/Wong 期刊配色（`"nature"`），返回 `style.colors` 供后续引用。配色来源与使用见 `MATLAB配色参考.md`。
+2. 常见图型实现见 `MATLAB常见图表模式.md`（散点/柱状/趋势+CI/热力图/多线…），非数据示意图见 `MATLAB示意图绘制规范.md`（流程图/架构图/几何图）。
+3. `issues = audit_publication_figure(fig)` — 检查长标题、超量图例、稠密标记、冗余 colorbar 等可自动判定的问题。
+4. `export_publication_figure(fig, "figures/result_qN", 300)` — 通过设计门禁后输出 SVG、PNG 与灰度质检图；导出后运行语言无关的 `figure_audit.py` 再实际打开 PNG 检查缺字、刻度重叠、遮挡与多面板一致性。
+5. 主结论与辅助证据信息量不同时用非对称 `tiledlayout`，不机械创建等宽双子图；确有数值意义的参考线用 `xline`/`yline` 并在图注说明，不调用 `grid on`。
 
 ## 与审计工具衔接
 

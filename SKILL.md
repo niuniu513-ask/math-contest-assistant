@@ -66,7 +66,7 @@ python "<SKILL_ROOT>/scripts/project_state.py" status --project-root "<PROJECT_R
 | 题目与附件解析 | `references/自主解题协议.md` | `tools/pdf/SKILL.md`、`tools/xlsx/SKILL.md` |
 | 建模与选型 | `references/建模工作流程.md`、`references/建模质检清单.md` | `references/算法索引.md`、相关 `assets/*.md`、`assets/08-晴天资料方法卡.md`、`references/model-catalog-guide.md` |
 | 使用往届资料 | `references/语料证据使用指南.md` | `references/获奖论文实读方法论.md`、`references/contest-questions-database.md`、`references/award-paper-patterns*.md` |
-| 编程与复现 | `references/编程工作流程.md`、`references/编程质检清单.md`、`scientific-toolkit-skill` | `references/code-generation-guide.md`、`references/MATLAB规范.md`、`tools/xlsx/SKILL.md` |
+| 编程与复现 | `references/编程工作流程.md`、`references/编程质检清单.md`、`scientific-toolkit-skill` | `references/code-generation-guide.md`、`references/MATLAB规范.md`、`references/MATLAB代码生成规范.md`、`references/MATLAB常见图表模式.md`、`references/MATLAB配色参考.md`、`references/MATLAB示意图绘制规范.md`、`scripts/*.m`、`tools/xlsx/SKILL.md` |
 | 图表 | `references/可视化规范.md` | `references/图表选择与避坑.md` |
 | 论文内容 | `references/论文写作工作流.md`、`references/深度写作与竞争力门禁.md`、`references/论文自审框架.md`、`research-writing-skill` | `humanizer_academic`（事实冻结后的终稿润色） |
 | Word/演示排版 | `office-academic-skill` | `tools/docx/SKILL.md`、`tools/latex/SKILL.md`、格式规范 |
@@ -91,7 +91,7 @@ python "<SKILL_ROOT>/scripts/project_state.py" status --project-root "<PROJECT_R
 
 ## 7. 编程、求解与验证
 
-1. 在 `intake`/`model` 阶段显式完成**语言选型**并写入模型合同：依据团队成员熟练度（能否逐行解释并答辩代码）、运行环境（MATLAB 许可证与所需工具箱、Python 科学栈）、问题类型与交付约束选择 Python 或 MATLAB，二者是一等实现路线；不得因模板偏好或生成工具的默认值固定语言。语言一旦选定即贯穿求解、图表与附录代码，避免"论文用 MATLAB、附录却贴 Python"或反之的错配；团队无法解释的代码必须回退或重写。按数据读取、清洗、模型、验证、图表和导出分层实现；路径相对 `PROJECT_ROOT`，参数集中配置，随机过程固定种子。MATLAB 路线按 `references/MATLAB规范.md` 执行并记录工具箱清单。
+1. 在 `intake`/`model` 阶段显式完成**语言选型**并写入模型合同：依据团队成员熟练度（能否逐行解释并答辩代码）、运行环境（MATLAB 许可证与所需工具箱、Python 科学栈）、问题类型与交付约束选择 Python 或 MATLAB，二者是一等实现路线；不得因模板偏好或生成工具的默认值固定语言。语言一旦选定即贯穿求解、图表与附录代码，避免"论文用 MATLAB、附录却贴 Python"或反之的错配；团队无法解释的代码必须回退或重写。按数据读取、清洗、模型、验证、图表和导出分层实现；路径相对 `PROJECT_ROOT`，参数集中配置，随机过程固定种子。MATLAB 路线按 `references/MATLAB规范.md` 执行并记录工具箱清单；随附的 4 个 `.m` 脚本（`check_matlab_env`、`apply_publication_style`、`audit_publication_figure`、`export_publication_figure`）复制到 `PROJECT_ROOT/utils/` 后 `addpath` 使用，五类方法完整骨架见 `references/MATLAB代码生成规范.md`。
 2. 先运行最小实例并记录命令、退出码和结果摘要；通过 `P1` 后才做全量计算。
 3. 验证方式由模型决定，不机械全做：
    - 回归/分类：适当的数据切分、基线、交叉验证、校准或残差诊断；
