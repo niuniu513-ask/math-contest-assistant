@@ -48,12 +48,14 @@
 | `office-academic-skill` | DOCX/PPT 排版 | 用户自行安装 |
 | `humanizer_academic` | 降 AI 写作痕迹 | [GitHub](https://github.com/matsuikentaro1/humanizer_academic) |
 
-### 可选环境依赖
+### 环境依赖
 
-- **Python 3.9+**：代码求解、DOCX 生成、图表审计（numpy/scipy/matplotlib/pandas/sklearn）
-- **MATLAB**（可选）：备选求解环境
+- **Python 3.9+**：一等实现路线之一——代码求解、DOCX 生成、图表审计（numpy/scipy/matplotlib/pandas/sklearn）
+- **MATLAB**：与 Python 同等重要的一等实现路线——备齐工具箱后按 `references/语言选型对比.md` 对当前题对比选型；随附 `check_matlab_env.m`、`apply_publication_style.m`、`audit_publication_figure.m`、`export_publication_figure.m` 与五类方法模板、配色/图表/示意图规范
 - **LaTeX (XeLaTeX + latexmk)**：PDF 论文编译
 - **Pandoc**：LaTeX → DOCX 转换
+
+> 语言选型：Python 与 MATLAB 同等重要，不设主路线/备选。进入编程前由 Agent 按评分卡对比两种语言对当前题的适配（算法覆盖、工具箱、复现、团队可辩护性、参考图能力、交付约束），结论写入模型合同；选定后求解、数据图、参考图与附录代码统一语言。
 
 ## 安装
 

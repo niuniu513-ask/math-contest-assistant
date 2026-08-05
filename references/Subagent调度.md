@@ -29,6 +29,10 @@
 
 存在未解决的 P0/P1 时返回 `FAIL`；缺少不可替代输入、依赖或权限时返回 `BLOCKED`。主 Agent 不得口头覆盖。
 
+## 语言对比 Agent
+
+进入 `prototype` 前（`M1` 后）必须完成 Python vs MATLAB 选型。环境支持 Subagent 时派发独立对比 Agent：输入题目、模型合同候选语言与两种语言的评分卡（`references/语言选型对比.md`），输出逐项比较、`chosen`/`runner_up`/`deciding_reason` 与参考图语言，写回合同 `language_selection`；不把偏好或作者自评泄露给对比者。环境不支持时按评分卡自评并标记 `LIMITED`，不得伪称独立对比。
+
 ## 可选协作
 
 仅当用户明确要求额外协作时，可并行官方规则核验、附件盘点、文献调研、隔离算法原型或独立实验。不要让多个 Agent 同时修改权威模型、代码、结果或论文；不要按章节多人拼写论文。
