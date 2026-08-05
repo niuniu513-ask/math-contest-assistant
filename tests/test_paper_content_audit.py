@@ -263,5 +263,92 @@ $$e_ij=10^-5$$
             self.assertEqual(failures, [], failures)
 
 
+    def test_table_numbering_catches_duplicate_and_dangling(self):
+        text = """结果如表2所示。
+
+| 符号 | 含义 |
+|---|---|
+| x | 变量 |
+
+  : 表 1主要符号
+
+第二张表也以表1被引用。
+
+| 方案 | 值 |
+|---|---|
+| a | 1 |
+
+  : 对照表 {#tab:second}
+
+表[1](#tab:second)显示两组差异，结论按表3执行。
+"""
+        findings = AUDIT.audit_table_references(text, True)
+        codes = {item["code"] for item in findings}
+        self.assertIn("duplicate_table_caption_number", codes)
+        self.assertIn("dangling_table_reference", codes)
+
+    def test_table_numbering_clean_paper_passes(self):
+        text = """结果如表1所示。
+
+| a | b |
+|---:|---:|
+| 1 | 2 |
+
+  : 表 1主表
+
+其余见表2。
+
+| c | d |
+|---|---|
+| 3 | 4 |
+
+  : 表 2对照表
+"""
+        findings = AUDIT.audit_table_references(text, True)
+        self.assertEqual([item for item in findings if item["severity"] == "FAIL"], [])
+
+    def test_results_policy_cross_reference_flags_unrun_policy(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "results").mkdir()
+            (root / "results" / "backtest.csv").write_text(
+                "round,policy,rmse\n1,hybrid,0.1\n1,random,0.2\n1,pure_exploitation,0.3\n1,maximin,0.4\n",
+                encoding="utf-8",
+            )
+            disclosed = "混合策略优于随机策略；只追求均值会集中选点，maximin 备用方案未启用。"
+            ok_findings, metrics = AUDIT.audit_results_policy_cross_reference(root, disclosed)
+            self.assertEqual([item for item in ok_findings if item["severity"] == "FAIL"], [])
+            self.assertEqual(len(metrics["results_policy_values"]), 4)
+
+            hidden = "混合策略优于随机策略，但不比较只追求不确定性的策略。"
+            bad_findings, _ = AUDIT.audit_results_policy_cross_reference(root, hidden)
+            bad_codes = {item["code"] for item in bad_findings}
+            self.assertIn("text_describes_unrun_policy", bad_codes)
+            self.assertIn("results_policy_not_disclosed", bad_codes)
+
+    def test_docx_duplicate_heading_detected(self):
+        import io
+        import zipfile
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            namespace = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+            body = (
+                '<w:document ' + namespace + '><w:body>'
+                '<w:p><w:pPr><w:pStyle w:val="1"/></w:pPr><w:r><w:t>附录 D代码</w:t></w:r></w:p>'
+                '<w:p><w:pPr><w:pStyle w:val="1"/></w:pPr><w:r><w:t>附录 D　代码</w:t></w:r></w:p>'
+                '<w:p><w:pPr><w:pStyle w:val="2"/></w:pPr><w:r><w:t>正常小节</w:t></w:r></w:p>'
+                '</w:body></w:document>'
+            )
+            buffer = io.BytesIO()
+            with zipfile.ZipFile(buffer, "w") as archive:
+                archive.writestr("word/document.xml", body)
+            path = root / "dup.docx"
+            path.write_bytes(buffer.getvalue())
+            findings, _ = AUDIT.audit_final_docx(path)
+            codes = {item["code"] for item in findings}
+            self.assertIn("duplicate_docx_heading", codes)
+
+
 if __name__ == "__main__":
     unittest.main()

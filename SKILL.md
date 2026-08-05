@@ -91,7 +91,7 @@ python "<SKILL_ROOT>/scripts/project_state.py" status --project-root "<PROJECT_R
 
 ## 7. 编程、求解与验证
 
-1. 根据模型、现有资产和运行环境选择 Python 或 MATLAB；二者都是一等实现路线。按数据读取、清洗、模型、验证、图表和导出分层实现；路径相对 `PROJECT_ROOT`，参数集中配置，随机过程固定种子。
+1. 在 `intake`/`model` 阶段显式完成**语言选型**并写入模型合同：依据团队成员熟练度（能否逐行解释并答辩代码）、运行环境（MATLAB 许可证与所需工具箱、Python 科学栈）、问题类型与交付约束选择 Python 或 MATLAB，二者是一等实现路线；不得因模板偏好或生成工具的默认值固定语言。语言一旦选定即贯穿求解、图表与附录代码，避免"论文用 MATLAB、附录却贴 Python"或反之的错配；团队无法解释的代码必须回退或重写。按数据读取、清洗、模型、验证、图表和导出分层实现；路径相对 `PROJECT_ROOT`，参数集中配置，随机过程固定种子。MATLAB 路线按 `references/MATLAB规范.md` 执行并记录工具箱清单。
 2. 先运行最小实例并记录命令、退出码和结果摘要；通过 `P1` 后才做全量计算。
 3. 验证方式由模型决定，不机械全做：
    - 回归/分类：适当的数据切分、基线、交叉验证、校准或残差诊断；
@@ -106,6 +106,8 @@ python "<SKILL_ROOT>/scripts/project_state.py" status --project-root "<PROJECT_R
 ```powershell
 python "<SKILL_ROOT>/scripts/repro_manifest.py" --project-root "<PROJECT_ROOT>" --input "<INPUT>" --seed 42 --parameters '{}' --command "<唯一复现命令>"
 ```
+
+7. 验证装置自身的超参数（回测权重、接受阈值、bootstrap 次数、网格规模）必须在 `M1` 模型合同或 `.work/model-contract.json` 中冻结并说明取值依据；禁止用结果反推权重使自设阈值"恰好通过"。正文报告回测"改善率/命中率"等指标时，须同时披露**未达最优的对比项**（例如纯开发基线在某指标上更优但被正文省略），否则属选择性汇报。
 
 ## 8. 可视化与结果表
 
@@ -124,7 +126,7 @@ python "<SKILL_ROOT>/scripts/figure_audit.py" "<PROJECT_ROOT>/figures" --no-cate
 ## 9. 论文与格式
 
 1. 先建立 Claim–Evidence Matrix；每个关键结论绑定代码输出、表或图。证据不足时回退求解，不得先写结论再补数字。
-2. 沿用 `references/论文写作工作流.md` 和 `references/深度写作与竞争力门禁.md`。写作前生成 `.work/derivation-ledger.json`、`.work/decision-traces.json` 和 `.work/benchmark-gap.json`；缺少推导台账不得进入长篇正文。
+2. 沿用 `references/论文写作工作流.md` 和 `references/深度写作与竞争力门禁.md`。进入 `write` 前必须先生成 `.work/derivation-ledger.json`、`.work/decision-traces.json` 和 `.work/benchmark-gap.json` 并记录 `W1` 门禁：三份台账任一缺失或为空的，停留在 `evidence` 补齐真实证据，不得用叙述性文字代替，也不得进入长篇正文；核验通过后用 `project_state.py advance --to write --gate W1 --gate-status PASS --evidence evidence/gates/W1_write_gate.md` 记录。
 3. 论文篇幅由题目复杂度、证据完整性、官方规则和用户要求共同决定，不设默认最低页数；实际渲染后记录主体、附件和总页数。不得用重复文字、空白、放大字号或拉伸图表凑页数。
 4. 主体篇幅由完整的问题分析、假设依据、逐步模型推导、算法分步说明、数值代入实例、演示/实例图、结果、独立验证、敏感性或不确定性分析、评价和局限共同支撑。每一处近似写明成立条件并估计误差量级；无法估计时降低结论强度。
 5. 优化模型完整列出目标和全部约束并逐项解释；统计/机器学习模型完整说明预处理、特征选择、参数确定、验证设计和指标理由。后问开头说明与前问共享的具体变量、公式、字段和误差传播。
@@ -134,7 +136,7 @@ python "<SKILL_ROOT>/scripts/figure_audit.py" "<PROJECT_ROOT>/figures" --no-cate
 9. 默认只生成用户要求的格式；用户要求完整交付但未指定时，优先生成可可靠验证的一种格式，再视环境生成另一种。
 10. Word 使用 `tools/docx/SKILL.md`；LaTeX/PDF 使用 `tools/latex/SKILL.md`。官方当届模板优先于内置模板和历史模板。
 11. 引用必须可追溯。获奖论文只能用于内部方法与表达研究，正式竞赛稿不得引用同届/未来获奖论文或暴露内部对标编号；理论依据回到原始论文、标准、教材和官方来源。
-12. 写作完成后先运行 `paper_content_audit.py`，再核对数值、单位、符号、图表编号、引用、附件文件、摘要和正文页数；语言润色不得改变技术事实。
+12. 写作完成后先运行 `paper_content_audit.py`，再核对数值、单位、符号、图表编号、引用、附件文件、摘要和正文页数；语言润色不得改变技术事实。审计通过且逐页渲染检查完成后记录 `W2` 门禁（`project_state.py advance --to package --gate W2 --gate-status PASS --evidence evidence/gates/W2_package_gate.md`），并附审计报告路径。新增审计脚本会拦截图表编号错乱（重号/悬空引用）、正文描述但结果文件未执行的策略比较、以及 Word 中重复连续标题三类缺陷。
 
 ```powershell
 python "<SKILL_ROOT>/scripts/paper_content_audit.py" "<PROJECT_ROOT>/论文正文.md" `
@@ -167,10 +169,11 @@ python "<SKILL_ROOT>/scripts/paper_content_audit.py" "<PROJECT_ROOT>/论文正�
 - 唯一复现命令可从 `PROJECT_ROOT` 运行，输入哈希与依赖已记录；
 - 论文主张与公式、表、图、代码结果一致，引用可追溯；
 - 论文篇幅符合当届规则和用户要求，主体与附件口径已记录；
+- 论文实际引用的图片集合与 `figure_manifest`、运行清单中的图片集合完全一致；补充脚本（算法流程图、额外结果图等）生成的图必须同样登记，禁止出现“正文引用 N 幅、清单只记更少幅”的口径缺口；
 - 每个核心模型均有必要的演示图/实例图和对应的结果证据；
 - 完整竞赛论文达到深度质量档：≥15 个连续编号有效公式、≥12 幅非装饰图、≥8 条真实领域文献，并通过双方法验证、三重敏感性、物理目标对齐和工程裕度检查；
 - 最终正文、参考文献和附录不含任何已知获奖论文信息、内部对标内容、纯文本数学表达式或模板化图表解读；
 - 3–5 处团队/方法选择痕迹均来自真实日志和实验；无法满足时阻断而非编造；
 - 目标格式已真实编译/生成并完成结构与视觉检查；
-- 相关门禁为 `PASS`，或在无独立质检环境下明确标记 `LIMITED`；
+- 相关门禁为 `PASS`，或在无独立质检环境下明确标记 `LIMITED`；完整竞赛论文必须记录 `W1` 与 `W2` 门禁结果；
 - 最终回复列出交付物、关键命令及退出码、门禁状态、核心指标和仍存在的限制。

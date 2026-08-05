@@ -9,6 +9,7 @@ benchmark leakage are easiest to detect deterministically.
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import json
 import re
@@ -118,7 +119,11 @@ def audit_final_docx(path: Path, forbidden_terms: tuple[str, ...] = ()) -> tuple
         plain_math.extend(match.group(0) for match in pattern.finditer(prose_without_files))
     if plain_math:
         findings.append(issue("FAIL", "final_docx_plain_text_math", "最终 DOCX 仍含纯文本数学表达式，必须转换为 OMML", matches=plain_math[:30]))
-    return findings, {"final_docx_checked": True, "final_docx_characters": len(text), "final_docx_plain_text_math": len(plain_math)}
+    headings = extract_docx_headings(path)
+    for (prev_style, prev_text), (curr_style, curr_text) in zip(headings, headings[1:]):
+        if prev_text == curr_text:
+            findings.append(issue("FAIL", "duplicate_docx_heading", f"最终 DOCX 存在重复连续标题：{curr_text}"))
+    return findings, {"final_docx_checked": True, "final_docx_characters": len(text), "final_docx_plain_text_math": len(plain_math), "final_docx_headings": len(headings)}
 
 
 def chinese_char_count(text: str) -> int:
@@ -828,6 +833,131 @@ def read_benchmark_forbidden_terms(path: Path | None) -> tuple[str, ...]:
     return tuple(term.strip() for term in terms if isinstance(term, str) and len(term.strip()) >= 2)
 
 
+def audit_table_references(text: str, strict: bool) -> list[dict[str, Any]]:
+    """表号一致性：捕获重号题注、未编号却被正文引用的题注以及悬空表号引用。
+
+    Pandoc 风格引用 `表[N](#tab:xxx)` 会与 `{... #tab:xxx}` 题注锚点互相核对；
+    普通 `表N` 引用必须能在已定义的表号集合中找到。这样可发现把两张表都写成
+    “表1”或正文引用“表2”而全文没有“表2”题注这类真实交付缺陷。
+    """
+    findings: list[dict[str, Any]] = []
+    numbered_captions: list[int] = []
+    caption_lines: set[int] = set()
+    label_to_caption: dict[str, tuple[int | None, int]] = {}
+    for index, line in enumerate(text.splitlines()):
+        stripped = line.strip()
+        if not stripped.startswith((":", "|")):
+            continue
+        number_match = re.match(r"^:?\s*表\s*(\d+)(?!\d)", stripped)
+        label_match = re.search(r"\{#(tab:[^}\s]+)\}", stripped)
+        if number_match:
+            numbered_captions.append(int(number_match.group(1)))
+            caption_lines.add(index)
+        if label_match:
+            label_to_caption[label_match.group(1)] = (
+                int(number_match.group(1)) if number_match else None,
+                index,
+            )
+
+    seen: set[int] = set()
+    for number in numbered_captions:
+        if number in seen:
+            findings.append(issue("FAIL", "duplicate_table_caption_number", f"多个表格使用了相同的表号：表{number}"))
+        seen.add(number)
+
+    claimed: set[int] = set(numbered_captions)
+    for match in re.finditer(r"表\s*\[(\d+)\]\(#(tab:[^)\s]+)\)", text):
+        number, label = int(match.group(1)), match.group(2)
+        claimed.add(number)
+        if label not in label_to_caption:
+            findings.append(issue("FAIL", "table_reference_label_missing", f"正文以表{number}引用，但找不到对应题注 {label}"))
+            continue
+        explicit, _ = label_to_caption[label]
+        if explicit is not None:
+            if explicit != number:
+                findings.append(issue("FAIL", "table_caption_number_mismatch", f"题注 {label} 标注为表{explicit}，正文却以表{number}引用"))
+        elif number in numbered_captions:
+            findings.append(issue("FAIL", "duplicate_table_caption_number", f"未编号题注 {label} 被正文引用为表{number}，与已有表{number}题注重号"))
+
+    for match in re.finditer(r"表\s*(\d+)", text):
+        if text.count("\n", 0, match.start()) in caption_lines:
+            continue
+        number = int(match.group(1))
+        if number not in claimed:
+            findings.append(issue("FAIL" if strict else "WARN", "dangling_table_reference", f"正文引用表{number}，但没有定义对应表格"))
+    return findings
+
+
+STRATEGY_ALIASES: dict[str, tuple[str, ...]] = {
+    "hybrid": ("混合策略",),
+    "random": ("随机策略", "随机选取", "随机基线"),
+    "pure_exploitation": ("只追求均值", "纯开发", "纯利用", "均值优先", "仅追求均值"),
+    "maximin": ("maximin", "最大最小", "空间填充"),
+    "uncertainty": ("只追求不确定性", "不确定性优先", "仅追求不确定性"),
+}
+
+
+def audit_results_policy_cross_reference(project_root: Path, text: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """把正文描述的“策略比较”与 results/ 下含 policy 列的 CSV 枚举交叉核对。
+
+    两条规则：
+    1. 结果文件真正比较过的策略，正文必须披露（防止选择性汇报，例如回测里
+       pure_exploitation 更优却只字不提）；
+    2. 正文声称比较过、但结果文件枚举中不存在的策略，必须拦截（防止把
+       “只追求不确定性”写成跑过的对比，而实际代码里根本没有这个策略）。
+    """
+    findings: list[dict[str, Any]] = []
+    results_dir = project_root / "results"
+    if not results_dir.is_dir():
+        return findings, {"results_policy_values": []}
+    policy_values: set[str] = set()
+    for csv_path in sorted(results_dir.glob("*.csv")):
+        try:
+            with csv_path.open("r", encoding="utf-8-sig", newline="") as stream:
+                reader = csv.DictReader(stream)
+                if not reader.fieldnames:
+                    continue
+                policy_column = next((name for name in reader.fieldnames if name.strip().casefold() == "policy"), None)
+                if policy_column is None:
+                    continue
+                for row in reader:
+                    value = (row.get(policy_column) or "").strip()
+                    if value:
+                        policy_values.add(value)
+        except (OSError, csv.Error):
+            continue
+    if not policy_values:
+        return findings, {"results_policy_values": []}
+    normalized = {value.casefold() for value in policy_values}
+    for canonical, aliases in STRATEGY_ALIASES.items():
+        if canonical in normalized:
+            if not any(alias in text for alias in aliases):
+                findings.append(issue("FAIL", "results_policy_not_disclosed", f"结果文件比较了策略 {canonical}，但正文没有披露该策略"))
+        else:
+            mentioned = [alias for alias in aliases if alias in text]
+            if mentioned:
+                findings.append(issue("FAIL", "text_describes_unrun_policy", f"正文描述了策略比较（{' / '.join(mentioned)}），但结果文件策略枚举中没有对应项"))
+    return findings, {"results_policy_values": sorted(policy_values)}
+
+
+def extract_docx_headings(path: Path) -> list[tuple[str, str]]:
+    """返回 DOCX 中带标题样式的 (styleId, 去空白标题) 列表，用于检测重复标题。"""
+    with zipfile.ZipFile(path) as archive:
+        root = ET.fromstring(archive.read("word/document.xml"))
+    w = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+    headings: list[tuple[str, str]] = []
+    for paragraph in root.iter(f"{w}p"):
+        style_node = paragraph.find(f"./{w}pPr/{w}pStyle")
+        style_id = style_node.get(f"{w}val", "") if style_node is not None else ""
+        if not re.search(r"(?:heading|标题|^1$|^2$|^Title$)", style_id, flags=re.I):
+            continue
+        text = "".join(node.text or "" for node in paragraph.iter(f"{w}t"))
+        text = re.sub(r"\s+", "", text)
+        if text:
+            headings.append((style_id, text))
+    return headings
+
+
 def audit_text(
     text: str,
     strict: bool,
@@ -841,6 +971,7 @@ def audit_text(
     findings, formula_metrics = audit_formulas(clean, strict, min_equations)
     figure_findings, visual_metrics = audit_figures_and_tables(clean, strict, min_figures, project_root)
     findings.extend(figure_findings)
+    findings.extend(audit_table_references(clean, strict))
 
     without_math = re.sub(r"\\\[.*?\\\]", " ", clean, flags=re.S)
     without_math = re.sub(r"\\begin\{(?:equation\*?|align\*?|gather\*?|multline\*?)\}.*?\\end\{(?:equation\*?|align\*?|gather\*?|multline\*?)\}", " ", without_math, flags=re.S)
@@ -930,6 +1061,10 @@ def audit_text(
         "plain_text_math": len(plain_math),
         "human_phrases": human_phrases,
     }
+    if project_root is not None:
+        policy_findings, policy_metrics = audit_results_policy_cross_reference(project_root, clean)
+        findings.extend(policy_findings)
+        metrics.update(policy_metrics)
     return findings, metrics
 
 
