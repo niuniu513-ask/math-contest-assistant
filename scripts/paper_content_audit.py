@@ -382,7 +382,7 @@ def audit_figures_and_tables(text: str, strict: bool, min_figures: int, project_
             findings.extend(audit_interpretation("figure", label, analysis, strict))
         if re.match(r"^\s*\|?\s*:?-{3,}", line) and "|" in line:
             title_context = " ".join(lines[max(0, index - 3):index])
-            title_match = re.search(r"表\s*(\d+)[^\n|]*", title_context)
+            title_match = re.search(r"表\s*((?:[A-Za-z]+-)?\d+(?:-\d+)?)[^\n|]*", title_context)
             tables += 1
             if not title_match:
                 findings.append(issue("FAIL" if strict else "WARN", "untitled_table", f"第 {index + 1} 行的 Markdown 表缺少邻近的‘表N’标题，无法建立引用和分析映射"))
@@ -841,33 +841,36 @@ def audit_table_references(text: str, strict: bool) -> list[dict[str, Any]]:
     “表1”或正文引用“表2”而全文没有“表2”题注这类真实交付缺陷。
     """
     findings: list[dict[str, Any]] = []
-    numbered_captions: list[int] = []
+    numbered_captions: list[str] = []
     caption_lines: set[int] = set()
-    label_to_caption: dict[str, tuple[int | None, int]] = {}
+    label_to_caption: dict[str, tuple[str | None, int]] = {}
+    # 支持顺序编号(表1)、按章编号(表3-1)与附录编号(表A-1)
+    table_no_re = r"(?:[A-Za-z]+-)?\d+(?:-\d+)?"
+    table_cap_re = re.compile(r"^:?\s*表\s*(" + table_no_re + r")(?![\dA-Za-z-])")
     for index, line in enumerate(text.splitlines()):
         stripped = line.strip()
         if not stripped.startswith((":", "|")):
             continue
-        number_match = re.match(r"^:?\s*表\s*(\d+)(?!\d)", stripped)
+        number_match = table_cap_re.match(stripped)
         label_match = re.search(r"\{#(tab:[^}\s]+)\}", stripped)
         if number_match:
-            numbered_captions.append(int(number_match.group(1)))
+            numbered_captions.append(number_match.group(1))
             caption_lines.add(index)
         if label_match:
             label_to_caption[label_match.group(1)] = (
-                int(number_match.group(1)) if number_match else None,
+                number_match.group(1) if number_match else None,
                 index,
             )
 
-    seen: set[int] = set()
+    seen: set[str] = set()
     for number in numbered_captions:
         if number in seen:
             findings.append(issue("FAIL", "duplicate_table_caption_number", f"多个表格使用了相同的表号：表{number}"))
         seen.add(number)
 
-    claimed: set[int] = set(numbered_captions)
+    claimed: set[str] = set(numbered_captions)
     for match in re.finditer(r"表\s*\[(\d+)\]\(#(tab:[^)\s]+)\)", text):
-        number, label = int(match.group(1)), match.group(2)
+        number, label = match.group(1), match.group(2)
         claimed.add(number)
         if label not in label_to_caption:
             findings.append(issue("FAIL", "table_reference_label_missing", f"正文以表{number}引用，但找不到对应题注 {label}"))
@@ -879,10 +882,10 @@ def audit_table_references(text: str, strict: bool) -> list[dict[str, Any]]:
         elif number in numbered_captions:
             findings.append(issue("FAIL", "duplicate_table_caption_number", f"未编号题注 {label} 被正文引用为表{number}，与已有表{number}题注重号"))
 
-    for match in re.finditer(r"表\s*(\d+)", text):
+    for match in re.finditer(r"表\s*(" + table_no_re + r")", text):
         if text.count("\n", 0, match.start()) in caption_lines:
             continue
-        number = int(match.group(1))
+        number = match.group(1)
         if number not in claimed:
             findings.append(issue("FAIL" if strict else "WARN", "dangling_table_reference", f"正文引用表{number}，但没有定义对应表格"))
     return findings
@@ -958,6 +961,59 @@ def extract_docx_headings(path: Path) -> list[tuple[str, str]]:
     return headings
 
 
+def audit_paper_structure(text: str) -> list[dict[str, Any]]:
+    """硬性结构检查（见 references/论文结构硬性要求.md）。
+
+    检查：必需章节齐全且顺序正确、摘要单独一页、优缺点各>=4条、
+    改进方案、正文引用附录。返回发现的 FAIL 列表。
+    """
+    findings: list[dict[str, Any]] = []
+    required = [
+        ("摘要", r"^\s*#+\s*摘要"),
+        ("问题重述", r"^\s*#+\s*[1一]\s*问题重述"),
+        ("模型假设与符号说明", r"^\s*#+\s*[2二]\s*模型假设与符号说明"),
+        ("模型建立与求解", r"^\s*#+\s*[3三]\s*模型建立与求解"),
+        ("结果分析与讨论", r"^\s*#+\s*[4四]\s*结果分析与讨论"),
+        ("灵敏度分析", r"^\s*#+\s*[5五]\s*灵敏度分析"),
+        ("模型评价与改进", r"^\s*#+\s*[6六]\s*模型评价与改进"),
+        ("参考文献", r"^\s*#+\s*参考文献"),
+        ("附录", r"^\s*#+\s*附录"),
+    ]
+    positions: list[tuple[str, int]] = []
+    for name, pattern in required:
+        m = re.search(pattern, text, flags=re.M)
+        if not m:
+            findings.append(issue("FAIL", "missing_required_section", f"缺少必需章节：{name}"))
+            continue
+        positions.append((name, m.start()))
+    if len(positions) == len(required) and positions != sorted(positions, key=lambda x: x[1]):
+        findings.append(issue("FAIL", "section_order_wrong", "必需章节顺序错误，应按规范排列"))
+
+    kw = re.search(r"关键词[:：]", text)
+    if kw:
+        after = text[kw.end():kw.end() + 300]
+        if not re.search(r"newpage|pagebreak|openxml|\\\(\\\\|\\\\pagebreak", after):
+            findings.append(issue("FAIL", "abstract_not_own_page", "摘要未单独一页（关键词后缺分页标记）"))
+
+    def count_numbered_items(anchor: str) -> int:
+        m = re.search(anchor, text)
+        if not m:
+            return 0
+        seg = text[m.start():m.start() + 700]
+        return len(re.findall(r"^\s*\d+[\.、]", seg, flags=re.M))
+
+    if count_numbered_items(r"模型优点") < 4:
+        findings.append(issue("FAIL", "advantages_below_target", "模型优点少于 4 条"))
+    if count_numbered_items(r"模型缺点") < 4:
+        findings.append(issue("FAIL", "disadvantages_below_target", "模型缺点少于 4 条"))
+    if not re.search(r"改进方案", text):
+        findings.append(issue("FAIL", "missing_improvement_scheme", "缺少改进方案小节"))
+    if re.search(r"^\s*#+\s*附录", text, flags=re.M) and not re.search(
+            r"详见附录|见附录|附录\s*([A-Z])(?!\w)", text):
+        findings.append(issue("FAIL", "appendix_not_referenced", "正文未引用附录（应至少一次“详见附录A”等）"))
+    return findings
+
+
 def audit_text(
     text: str,
     strict: bool,
@@ -968,6 +1024,7 @@ def audit_text(
     forbidden_terms: tuple[str, ...] = (),
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     clean = strip_code_fences(text)
+    findings = audit_paper_structure(clean)
     findings, formula_metrics = audit_formulas(clean, strict, min_equations)
     figure_findings, visual_metrics = audit_figures_and_tables(clean, strict, min_figures, project_root)
     findings.extend(figure_findings)
