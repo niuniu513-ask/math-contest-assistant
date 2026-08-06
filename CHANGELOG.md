@@ -2,6 +2,15 @@
 
 版本遵循语义化版本（SemVer）：`主版本.次版本.修订`。每次发布更新 `VERSION` 文件并在本文件追加记录；提交信息使用 conventional commits（`feat:`/`fix:`/`refactor:` 等，subject 简洁、≤72 字符、祈使语气，详细说明放正文）。
 
+## [1.3.0] - 2026-08-06
+
+新增**物理示意图能力**（PowerPoint + python-pptx，代码生成、可复现）。
+
+- **为什么 PPT 而非 Visio**：物理示意图（坐标/光线/矢量/角度/受力/场）是几何关系示意，PPT 自由绘制适配、python-pptx 可编程可复现；Visio 面向工程图且多数环境未装。
+- **新增 `scripts/schematic_pptx.py`**：模板原语（line/arrow/ray/axes/arc/mirror/tower/circle/text），逻辑坐标自动映射，导出 PNG(约300dpi) + PPTX 矢量源；内置定日镜反射示例（法向=入射/反射角平分、镜面倾角=法向-90°）。
+- **新增 `references/物理示意图绘制规范.md`**：工具选择判据、几何正确性要求、配色/线宽/标注规范、复用与复现、依赖与降级（无 PowerPoint 时标记 BLOCKED）。
+- **SKILL.md**：分阶段加载表新增物理示意图入口；语言选型段落补充"物理示意图用 PPT+python-pptx"。
+
 ## [1.2.0] - 2026-08-06
 
 新增**论文结构硬性要求**与审计自动执行，并修复章节式表号误报（源自 2023 CUMCM A 定日镜场实战复盘）。
