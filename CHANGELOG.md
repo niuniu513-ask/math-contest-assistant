@@ -2,6 +2,16 @@
 
 版本遵循语义化版本（SemVer）：`主版本.次版本.修订`。每次发布更新 `VERSION` 文件并在本文件追加记录；提交信息使用 conventional commits（`feat:`/`fix:`/`refactor:` 等，subject 简洁、≤72 字符、祈使语气，详细说明放正文）。
 
+## [1.4.1] - 2026-08-11
+
+统一 LaTeX 模板文字颜色、摘要加粗、表格居中，并补齐 2026 附录清单要求。
+
+- **fix**：`cumcm-jayxin` 模板代码环境（listings）关键字/注释/字符串改为黑色，正文与链接本就为黑色，全篇文字颜色统一。
+- **fix**：`table`/`table*` 环境自动 `\centering`，示例章节把 `\centering` 移到题注前，解决表格左偏/题注未随表居中问题。
+- **feat**：摘要示例展示关键结果加粗写法（中文 `\heiti{}`、英文/数字 `\textbf{}`），并在格式规范中明确要求。
+- **feat**：新增附录 `contents/appendix/a0.tex`（支撑材料文件列表三线表占位），`main.tex` 接入；无支撑材料/未用程序的注明要求写入规范。
+- **docs**：`paper-format-cumcm.md`、`LaTeX格式规范-new.md`、`论文结构硬性要求.md` 同步补充文字颜色、表格居中、摘要加粗与附录完整清单要求。
+
 ## [1.4.0] - 2026-08-11
 
 新增 jayxin/cumcm 完整 CUMCM LaTeX 模板，并按 2026 官方修订稿校准格式依据。

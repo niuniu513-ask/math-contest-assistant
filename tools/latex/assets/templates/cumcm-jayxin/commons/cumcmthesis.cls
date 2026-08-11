@@ -125,10 +125,10 @@ Just choose `xelatex', no `pdflatex' or `latex' and so on.}
   backgroundcolor=\color{gray!5},
   basicstyle={\small\ttfamily},
   numbers=none,
-  numberstyle=\tiny\color{gray},
-  keywordstyle=\color{blue},
-  commentstyle=\color{dkgreen},
-  stringstyle=\color{mauve},
+  numberstyle=\tiny\color{black},
+  keywordstyle=\color{black},
+  commentstyle=\color{black},
+  stringstyle=\color{black},
   breaklines=true,
   breakatwhitespace=true,
   tabsize=3,
@@ -191,6 +191,8 @@ Just choose `xelatex', no `pdflatex' or `latex' and so on.}
   \phantomsection
   \addcontentsline{toc}{section}{\refname}
 }
+\AtBeginEnvironment{table}{\centering}
+\AtBeginEnvironment{table*}{\centering}
 %-----
 
 % 超链接 -------

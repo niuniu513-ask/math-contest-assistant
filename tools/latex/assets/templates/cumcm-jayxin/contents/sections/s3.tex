@@ -1,7 +1,8 @@
 \section{绘制普通三线表格}
 表格应具有三线表格式，因此常用 booktabs宏包，其标准格式如\cref{tab:001}~所示。
 \begin{table}[!htbp]
-    \caption{标准三线表格}\label{tab:001} \centering
+    \centering
+    \caption{标准三线表格}\label{tab:001}
     \begin{tabular}{ccccc}
         \toprule[1.5pt]
         $D$(in) & $P_u$(lbs) & $u_u$(in) & $\beta$ & $G_f$(psi.in)\\
@@ -16,6 +17,7 @@
 其绘制表格的代码及其说明如下。
 \begin{tcode}
     \begin{table}[!htbp]
+        \centering
         \caption[标签名]{中文标题}
         \begin{tabular}{cc...c}
             \toprule[1.5pt]
