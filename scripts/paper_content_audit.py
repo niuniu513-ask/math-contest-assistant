@@ -27,7 +27,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 
 TREND_PATTERNS = (
-    r"呈现", r"显示", r"可见", r"分布", r"趋势", r"峰值", r"谷值",
+    r"呈现", r"显示", r"可见", r"分布", r"趋势", r"特征", r"峰值", r"谷值",
     r"最大", r"最小", r"上升", r"下降", r"集中", r"差异", r"变化",
     r"收敛", r"误差", r"波动", r"拐点", r"斜率",
 )
@@ -51,7 +51,10 @@ EMPTY_FIGURE_PHRASES = (
 BENCHMARK_LEAK_PATTERNS = {
     "同届或获奖论文": re.compile(r"(?:获奖论文|特等奖论文|同届论文|往届\s*[A-E]\d{2,3}|[A-E]\d{3}\s*(?:论文|获奖))", re.I),
     "内部对标元话语": re.compile(r"(?:用于对标|用于核对数量级|赛后核对|内部样本|benchmark[-_ ]?gap)", re.I),
-    "内部门禁元话语": re.compile(r"(?:Claim.?Evidence|(?:^|[^A-Za-z0-9])[MPW][12](?:[^A-Za-z0-9]|$)|门禁证据)", re.I | re.M),
+    "内部门禁元话语": re.compile(
+        r"(?i:Claim.?Evidence|门禁证据)|(?:^|[^A-Za-z0-9])[MPW][12](?:[^A-Za-z0-9]|$)",
+        re.M,
+    ),
     "内部路径": re.compile(r"(?:[A-Za-z]:\\[^\s]+|/Users/[^\s]+|/home/[^\s]+|\.work[/\\])"),
 }
 
@@ -974,9 +977,9 @@ def audit_paper_structure(text: str) -> list[dict[str, Any]]:
     """
     findings: list[dict[str, Any]] = []
     heading = r"^\s*#+\s*"
-    num = r"(?:[一二三四五六七八九十1-9]+\s*[、.．]\s*)?"
+    num = r"(?:[一二三四五六七八九十1-9]+(?:\.[1-9]+)*\s*(?:[、.．]|\s)\s*)?"
     required = [
-        ("摘要", re.compile(heading + r"摘要", re.M)),
+        ("摘要", re.compile(heading + r"摘\s*要", re.M)),
         ("问题重述", re.compile(heading + num + r"问题重述(?:与分析)?", re.M)),
         (
             "模型假设",
@@ -1114,7 +1117,11 @@ def audit_text(
         findings.append(issue("FAIL", "dynamic_benchmark_leak", "正式竞赛稿命中内部对标样本禁漏词", matches=leaked_terms[:20]))
 
     question_count = len(re.findall(r"(?:问题|第)\s*[一二三四五六七八九十1-9]\s*(?:问|：|:)", clean))
-    if question_count >= 2 and not re.search(r"^\s*#+\s*问题间关联分析", clean, flags=re.M):
+    if question_count >= 2 and not re.search(
+        r"^\s*#+\s*(?:[一二三四五六七八九十1-9]+(?:\.[1-9]+)*\s*(?:[、.．]|\s)\s*)?问题间关联分析",
+        clean,
+        flags=re.M,
+    ):
         findings.append(issue("FAIL" if strict else "WARN", "missing_question_linkage", "多问论文缺少专门的“问题间关联分析”小节"))
     if question_count >= 2 and not re.search(r"误差传播|继承.+(?:变量|公式|结果|字段)|与前问的衔接", clean):
         findings.append(issue("FAIL" if strict else "WARN", "question_linkage_not_specific", "问题间关联未具体说明共享变量、公式、结果字段或误差传播"))

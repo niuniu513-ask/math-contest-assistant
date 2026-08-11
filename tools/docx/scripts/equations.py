@@ -895,6 +895,26 @@ def _gate_warnings(warnings, allow_warnings, override_reason):
     return allowed, blocked
 
 
+def _markdown_math_to_dollars(text: str) -> str:
+    """把 Pandoc Markdown 不默认识别的 \\(...\\) / \\[...\\] 转为 $...$ / $$...$$，
+    跳过围栏代码块，保证独立公式在 DOCX 中输出为可编辑 OMML。"""
+    parts = re.split(r"(```.*?```)", text, flags=re.S)
+    for index in range(0, len(parts), 2):
+        parts[index] = re.sub(
+            r"\\\[(.*?)\\\]",
+            lambda match: "$$" + match.group(1) + "$$",
+            parts[index],
+            flags=re.S,
+        )
+        parts[index] = re.sub(
+            r"\\\((.*?)\\\)",
+            lambda match: "$" + match.group(1) + "$",
+            parts[index],
+            flags=re.S,
+        )
+    return "".join(parts)
+
+
 def _pandoc_to_docx(
     source_path,
     output_path,
@@ -933,6 +953,7 @@ def _pandoc_to_docx(
     output.parent.mkdir(parents=True, exist_ok=True)
     flattened = None
     source_for_pandoc = source
+    adapted = None
     if source_format == "latex":
         expanded, resource_root, source_files = _expand_latex_inputs(source)
         project_hash, project_files = _project_bundle(
@@ -955,6 +976,13 @@ def _pandoc_to_docx(
         source_hash = _sha256(source)
         project_hash = source_hash
         project_files = source_files
+        adapted_text = _markdown_math_to_dollars(source.read_text(encoding="utf-8"))
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".md", delete=False, encoding="utf-8"
+        ) as handle:
+            handle.write(adapted_text)
+            adapted = Path(handle.name)
+        source_for_pandoc = adapted
     with tempfile.NamedTemporaryFile(
         dir=output.parent, suffix=".docx", delete=False
     ) as handle:
@@ -1062,6 +1090,8 @@ def _pandoc_to_docx(
             temporary.unlink()
         if flattened is not None and flattened.exists():
             flattened.unlink()
+        if adapted is not None and adapted.exists():
+            adapted.unlink()
     return {
         "output_path": str(output),
         "manifest": str(manifest_path),
