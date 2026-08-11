@@ -2,6 +2,18 @@
 
 版本遵循语义化版本（SemVer）：`主版本.次版本.修订`。每次发布更新 `VERSION` 文件并在本文件追加记录；提交信息使用 conventional commits（`feat:`/`fix:`/`refactor:` 等，subject 简洁、≤72 字符、祈使语气，详细说明放正文）。
 
+## [1.3.1] - 2026-08-11
+
+质量与文档维护：修复断链、删除重复目录、校准 README、补充冒烟测试。
+
+- **fix**：`论文结构硬性要求.md` 引用不存在的 `apply_cumcm_format.py`，改为指向 `tools/docx/scripts/paper_format.py`。
+- **fix**：`tools/docx/scripts/self_check.py` 模板路径适配本仓库（`tools/docx/templates/论文模板.docx`），环境变量改为 `MATH_CONTEST_ASSISTANT_ROOT`。
+- **fix**：`scripts/schematic_pptx.py` 修复 `save(export_png=False)` 把 `False` 当导出路径的缺陷；命令行支持 `--help`。
+- **docs**：SKILL.md 分阶段加载表补全 14 个未路由参考文档与 3 个脚本；`references/前置合同.md` 更名 `references/模型合同.md`。
+- **chore**：删除与 `tools/docx/scripts` 重复且已分化的 `tools/scripts` 目录（64 个文件）。
+- **docs**：README 数据校准（41 个参考文档、20 类代码模板、15 个脚本等），补充 MIT LICENSE。
+- **test**：新增 `test_smoke.py`（状态机、复现清单、AI 检测 CLI、物理示意图），与既有审计测试合并运行。
+
 ## [1.3.0] - 2026-08-06
 
 新增**物理示意图能力**（PowerPoint + python-pptx，代码生成、可复现）。

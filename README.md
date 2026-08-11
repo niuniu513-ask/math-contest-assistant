@@ -20,10 +20,10 @@
 
 - **三阶段流程**：建模手（破题+选模型）→ 编程手（求解+可视化）→ 论文手（写作+排版+降AI）
 - **双模式质检**：模式 A（独立 Agent 验收 M1/P1/P2/W1/W2）/ 模式 B（清单自审）
-- **28 类内嵌建模方法**：AHP/TOPSIS/灰色预测/ARIMA/PSO/GA/神经网络/LSTM...
+- **内嵌方法库**：20 类代码模板（AHP/TOPSIS/灰色预测/ARIMA/PSO/GA 等）+ 7 类算法说明（含神经网络/LSTM）
 - **37 篇获奖论文分析**：2023-2025 国赛优秀论文写作范式提炼
 - **双格式输出**：LaTeX PDF + Word DOCX，正文数据图表结论一致
-- **降 AI 痕迹**：34 个 AI 写作模式检测，两遍改写+自审流程
+- **降 AI 痕迹**：内置 ai_detector.py 启发式检测，两遍改写+自审流程
 - **内置基线模板**：开箱即可生成论文，也可指定当届官方模板
 
 ## 质检门禁（双模式）
@@ -117,12 +117,12 @@ git clone https://github.com/<your-username>/math-contest-assistant.git ~/.winds
 math-contest-assistant/
 ├── SKILL.md                    # 主技能定义
 ├── README.md                   # 本文件
-├── references/                 # 参考文档（27 个 .md）
+├── references/                 # 参考文档（41 个 .md）
 │   ├── Subagent调度.md         #   模式 A 质检调度规则
 │   ├── 算法索引.md             #   算法速查路由
-│   ├── code-generation-guide.md #  28 类方法代码模板（907行）
+│   ├── code-generation-guide.md #  20 类方法代码模板（835行）
 │   ├── 可视化规范.md           #   Nature/SCI 出版级图表
-│   ├── 图表选择与避坑.md       #   选图四问 + 17 个常见坑
+│   ├── 图表选择与避坑.md       #   选图四问 + 主动拦截问题清单
 │   ├── 英文化工作流.md         #   美赛三阶段英文化
 │   ├── 论文自审框架.md         #   4 类 40+ 检查项
 │   ├── 章节模板.md             #   论文章节推导范式
@@ -135,7 +135,9 @@ math-contest-assistant/
 │   ├── xlsx/                   #   Excel 数据处理
 │   └── paper_search/           #   文献搜索
 ├── assets/                     # 算法详细说明（7 类）
-├── scripts/                    # Python 脚本（7 个）
+├── scripts/                    # Python/MATLAB 脚本（15 个）
+├── test_smoke.py               # 核心脚本冒烟测试（python test_smoke.py）
+├── LICENSE                     # MIT 许可证
 └── .gitignore
 ```
 

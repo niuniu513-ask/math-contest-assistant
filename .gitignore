@@ -50,3 +50,7 @@ build/
 *.tmp
 *.bak
 *~
+
+# Generated schematic demo outputs
+scripts/示意图_定日镜反射.png
+scripts/示意图_定日镜反射.pptx

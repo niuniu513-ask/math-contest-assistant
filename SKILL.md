@@ -64,12 +64,12 @@ python "<SKILL_ROOT>/scripts/project_state.py" status --project-root "<PROJECT_R
 |---|---|---|
 | 跨技能协同 | `references/技能协同协议.md` | 当前阶段所需的外部 Skill |
 | 题目与附件解析 | `references/自主解题协议.md` | `tools/pdf/SKILL.md`、`tools/xlsx/SKILL.md` |
-| 建模与选型 | `references/建模工作流程.md`、`references/建模质检清单.md`、`references/语言选型对比.md` | `references/算法索引.md`、相关 `assets/*.md`、`assets/08-晴天资料方法卡.md`、`references/model-catalog-guide.md` |
+| 建模与选型 | `references/建模工作流程.md`、`references/建模质检清单.md`、`references/语言选型对比.md` | `references/算法索引.md`、相关 `assets/*.md`、`assets/08-晴天资料方法卡.md`、`references/model-catalog-guide.md`、`references/建模常见模式.md`、`references/建模设计理论.md`、`references/模型合同.md` |
 | 使用往届资料 | `references/语料证据使用指南.md` | `references/获奖论文实读方法论.md`、`references/contest-questions-database.md`、`references/award-paper-patterns*.md` |
-| 编程与复现 | `references/编程工作流程.md`、`references/编程质检清单.md`、`scientific-toolkit-skill` | `references/code-generation-guide.md`、`references/MATLAB规范.md`、`references/MATLAB代码生成规范.md`、`references/MATLAB常见图表模式.md`、`references/MATLAB配色参考.md`、`references/MATLAB示意图绘制规范.md`、`scripts/*.m`、`tools/xlsx/SKILL.md` |
+| 编程与复现 | `references/编程工作流程.md`、`references/编程质检清单.md`、`scientific-toolkit-skill` | `references/code-generation-guide.md`、`references/MATLAB规范.md`、`references/MATLAB代码生成规范.md`、`references/MATLAB常见图表模式.md`、`references/MATLAB配色参考.md`、`references/MATLAB示意图绘制规范.md`、`references/编程常见模式.md`、`scripts/*.m`、`scripts/safe_executor.py`（沙箱执行）、`scripts/check_env.py`（环境检查）、`tools/xlsx/SKILL.md` |
 | 图表 | `references/可视化规范.md` | `references/图表选择与避坑.md`、`references/物理示意图绘制规范.md`、`scripts/schematic_pptx.py` |
-| 论文内容 | `references/论文写作工作流.md`、`references/深度写作与竞争力门禁.md`、`references/论文自审框架.md`、`research-writing-skill` | `humanizer_academic`（事实冻结后的终稿润色） |
-| Word/演示排版 | `office-academic-skill` | `tools/docx/SKILL.md`、`tools/latex/SKILL.md`、格式规范 |
+| 论文内容 | `references/论文写作工作流.md`、`references/深度写作与竞争力门禁.md`、`references/论文自审框架.md`、`research-writing-skill` | `references/章节模板.md`、`references/写作规范.md`、`references/论文结构硬性要求.md`、`references/避坑指南.md`、`references/英文化工作流.md`（美赛英文化）、`scripts/ai_detector.py`（AI 痕迹自检）、`humanizer_academic`（事实冻结后的终稿润色） |
+| Word/演示排版 | `office-academic-skill` | `tools/docx/SKILL.md`、`tools/latex/SKILL.md`、`references/paper-format-cumcm.md`、`references/paper-format-mcm.md`、`references/论文格式规范-word.md`、`references/LaTeX格式规范-new.md`、`references/formula-standards.md`、`scripts/generate_docx.py`（旧版直出 DOCX，优先 `tools/docx`） |
 | 联网取证 | `web-access` | 官方站点、原始论文页、数据发布页 |
 | 文献搜索 | `tools/paper_search/SKILL.md` | 原始出版页或 DOI |
 

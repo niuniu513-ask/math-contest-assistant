@@ -11,9 +11,9 @@ from pathlib import Path
 
 from lxml import etree
 
-ROOT = Path(os.environ.get("MATH_MODELING_SKILL_ROOT", Path(__file__).resolve().parents[3]))
+ROOT = Path(os.environ.get("MATH_CONTEST_ASSISTANT_ROOT", Path(__file__).resolve().parents[3]))
 SCRIPTS = ROOT / "tools" / "docx" / "scripts"
-TEMPLATE = ROOT / "references" / "roles" / "论文手" / "references" / "论文模板.docx"
+TEMPLATE = ROOT / "tools" / "docx" / "templates" / "论文模板.docx"
 W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 M_NS = "http://schemas.openxmlformats.org/officeDocument/2006/math"
 

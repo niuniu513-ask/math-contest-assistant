@@ -209,11 +209,11 @@ class Schematic:
         """
         out = Path(path)
         self.prs.save(str(out))
-        do_png = export_png is not None
-        do_svg = export_svg is not None
+        do_png = export_png is True or isinstance(export_png, str)
+        do_svg = export_svg is True or isinstance(export_svg, str)
         if do_png or do_svg:
-            png = str(out.with_suffix(".png")) if export_png is True else str(export_png)
-            svg = str(out.with_suffix(".svg")) if export_svg is True else str(export_svg)
+            png = str(out.with_suffix(".png")) if export_png is True else (str(export_png) if isinstance(export_png, str) else None)
+            svg = str(out.with_suffix(".svg")) if export_svg is True else (str(export_svg) if isinstance(export_svg, str) else None)
             self._export_com(out, png, svg)
         return out
 
@@ -289,4 +289,8 @@ def demo_heliostat(path="示意图_定日镜反射.pptx", export_png=True, expor
 
 if __name__ == "__main__":
     import sys
+    if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
+        print("用法: python schematic_pptx.py [输出路径]")
+        print("不传参数时运行内置示例并生成 示意图_定日镜反射.pptx/.png。")
+        sys.exit(0)
     demo_heliostat(sys.argv[1] if len(sys.argv) > 1 else "示意图_定日镜反射.pptx")
