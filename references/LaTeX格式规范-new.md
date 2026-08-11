@@ -14,6 +14,8 @@
 6. 保留初始化生成的 `latex-project.json`，其中模板来源、版本、哈希、主入口和资源绑定必须与实际项目一致。
 7. 代码和图表复制到 LaTeX 项目后立即执行 `latex_paper.py bind`，禁止两处独立修改。
 
+无官方模板且目标为 CUMCM 时，优先以内置完整模板初始化：`init ... --contest cumcm --template cumcm-jayxin`（结构完整、自带 Times/Arial 字体、含 2026 官方格式 PDF，文档类仅支持 XeLaTeX）；`assets/templates/cumcm/` 仅作最小占位基线。
+
 详细命令与校验能力见 `../../../../tools/latex/SKILL.md`。
 
 ## 公式、图表和引用
@@ -26,7 +28,7 @@
 
 ## 编译与校验
 
-优先使用 `latexmk` 完成交叉引用与参考文献构建，不启用 shell escape，也不读取项目级 `.latexmkrc`。构建工具在系统临时目录中的完整项目副本内编译，输出固定回收至项目 `build/`；副本或原始项目哈希发生变化即拒绝发布。未安装 `latexmk` 时，仅允许没有外部 BibTeX/BibLaTeX 文献库的项目回退为两次引擎编译。缺少 TeX 引擎、参考文献后端或宏包时明确报告环境问题，不自动联网安装或静默换引擎。
+优先使用 `latexmk` 完成交叉引用与参考文献构建，不启用 shell escape，也不读取项目级 `.latexmkrc`。构建工具在系统临时目录中的完整项目副本内编译，输出固定回收至项目 `build/`；副本或原始项目哈希发生变化即拒绝发布。未安装 `latexmk` 时，仅允许没有外部 BibTeX/BibLaTeX 文献库的项目回退为连续多次引擎编译（至少两遍，检测到 rerun 提示会自动补跑）。缺少 TeX 引擎、参考文献后端或宏包时明确报告环境问题，不自动联网安装或静默换引擎。
 
 交付前必须同时满足：
 

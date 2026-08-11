@@ -26,6 +26,8 @@ python "<SKILL_ROOT>/tools/latex/scripts/latex_paper.py" doctor `
 
 仅生成 LaTeX/PDF 时省略 `--need-pandoc`。诊断会检查 `latexmk`、所选引擎、BibTeX/Biber、`pypdf`、`pdfimages`、`pdftoppm`，需要生成 Word 时再检查 Pandoc。任一必需项缺失都先报告阻塞，不要写完整论文后才发现无法编译或校验。
 
+Windows 下 MiKTeX 的 `latexmk` 还需要 Perl 脚本引擎；`doctor` 报 latexmk 缺失但引擎可用，通常就是没装 Perl。此时对不含外部 BibTeX/BibLaTeX 文献库的项目，可按下方回退规则用连续多次引擎编译（至少两遍，检测到 rerun 提示会自动补跑），不要静默换用 pdflatex。
+
 ## 模板优先级
 
 1. 用户提供的当届官方 LaTeX 模板项目。
@@ -33,6 +35,15 @@ python "<SKILL_ROOT>/tools/latex/scripts/latex_paper.py" doctor `
 3. `assets/templates/cumcm/` 或 `assets/templates/mcm-icm/` 构建基线。
 
 内置模板只在没有官方 LaTeX 模板时使用，不替代当届官方规则。复制官方模板目录时保留其 `.cls`、`.sty`、`.bst`、字体和图片资源，不重写导言区或文档类。
+
+无官方模板且目标是 CUMCM 时，优先使用内置完整模板 `assets/templates/cumcm-jayxin/`（来源 <https://github.com/jayxin/cumcm>，Git tag `v1.1.0`，基于 latexstudio/CUMCMThesis 重组）：
+
+- 主入口 `main.tex`，文档类 `commons/cumcmthesis`，只支持 XeLaTeX；`latexmk main` 或连续多次 `xelatex main` 均可编译。
+- 类选项：`draft`（草稿期不嵌入图片/代码，最终电子版必须去掉）、`bwprint`/`colorprint`（黑白/彩色打印，默认彩色）、`withoutpreface`（电子版不含承诺书与编号专用页；纸质版不加该选项）。
+- `fonts/` 自带 Times/Arial 字体，离线可编译；`docs/` 内含 2026 第一次通知与 2019/2026 格式规范 PDF，可作当届格式核对的本地依据。
+- 初始化示例：`python "<SKILL_ROOT>/tools/latex/scripts/latex_paper.py" init "<PROJECT_ROOT>/完整论文-LaTeX" --contest cumcm --template cumcm-jayxin --template-source https://github.com/jayxin/cumcm --template-version v1.1.0`。
+- 模板自带示例正文会触发 SimSun 粗体回退（`TU/SimSun(1)/b/n`）和示例段落的 Overfull hbox 警告；正式论文替换示例章节后通常消除。若中文加粗仍触发 SimSun 回退，用 `\heiti` 替代 `\textbf`，或按既有规则精确放行。
+- `assets/templates/cumcm/` 保留为最小占位基线；有官方模板时仍按优先级 1/2 使用官方模板。
 
 ## 初始化
 
@@ -47,6 +58,8 @@ python "<SKILL_ROOT>/tools/latex/scripts/latex_paper.py" init `
 ```
 
 没有官方模板时同时省略 `--template`、`--main` 和模板元数据。官方模板入口为 `main.tex` 或只有一个顶层 `.tex` 时可省略 `--main`；入口位于子目录或存在多个候选文件时必须按官方说明显式指定，不能猜测。CUMCM、MCM/ICM 以外的竞赛使用 `--contest generic`，且必须提供当届官方模板。初始化后在复制件中填充正文，并把核验后的 BibTeX 条目放入项目；不得修改模板源文件。
+
+使用内置 CUMCM 完整模板时传 `--template cumcm-jayxin`（其入口固定为 `main.tex`，无需 `--main`）；只想用最小占位基线时传 `--template cumcm`。
 
 ## 绑定代码与图表资源
 
@@ -68,7 +81,7 @@ python "<SKILL_ROOT>/tools/latex/scripts/latex_paper.py" bind `
 
 ## 编译
 
-优先使用 `latexmk` 管理交叉引用和参考文献；未安装时，只对不含外部 BibTeX/BibLaTeX 文献库的项目回退为连续两次运行指定引擎。含外部文献库的完整论文必须安装 `latexmk`。默认使用 XeLaTeX，且不启用 shell escape。实际编译在系统临时目录中的完整项目副本执行，真实源码目录保持只读语义；编译后再次比较副本与原始源码哈希，任何改写都会阻断发布。
+优先使用 `latexmk` 管理交叉引用和参考文献；未安装时，只对不含外部 BibTeX/BibLaTeX 文献库的项目回退为连续多次运行指定引擎（至少两遍，检测到 rerun 提示会自动补跑至多两遍）。含外部文献库的完整论文必须安装 `latexmk`。默认使用 XeLaTeX，且不启用 shell escape。实际编译在系统临时目录中的完整项目副本执行，真实源码目录保持只读语义；编译后再次比较副本与原始源码哈希，任何改写都会阻断发布。
 
 ```powershell
 python "<SKILL_ROOT>/tools/latex/scripts/latex_paper.py" build `

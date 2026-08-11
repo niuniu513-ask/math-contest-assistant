@@ -2,6 +2,15 @@
 
 版本遵循语义化版本（SemVer）：`主版本.次版本.修订`。每次发布更新 `VERSION` 文件并在本文件追加记录；提交信息使用 conventional commits（`feat:`/`fix:`/`refactor:` 等，subject 简洁、≤72 字符、祈使语气，详细说明放正文）。
 
+## [1.4.0] - 2026-08-11
+
+新增 jayxin/cumcm 完整 CUMCM LaTeX 模板，并按 2026 官方修订稿校准格式依据。
+
+- **feat**：内置 `tools/latex/assets/templates/cumcm-jayxin/`（github.com/jayxin/cumcm v1.1.0，基于 latexstudio/CUMCMThesis 重组），含 `commons/cumcmthesis.cls`、承诺书/编号专用页、自带 Times/Arial 字体、2026 第一次通知与 2019/2026 格式规范 PDF；`init` 支持 `--template cumcm-jayxin` 按名引用。
+- **feat**：`latex_paper.py init` 支持以模板名（`cumcm-jayxin`/`cumcm`/`mcm-icm`）代替完整路径解析内置模板。
+- **docs**：`references/paper-format-cumcm.md` 按 2026 修订稿校准（纸质/电子版前言规则、正文上限 30 页、附录与支撑材料要求）；`references/LaTeX格式规范-new.md` 与 `tools/latex/SKILL.md` 登记新模板用法、类选项（`withoutpreface`/`bwprint`/`draft`）及 MiKTeX latexmk 依赖 Perl 的说明。
+- **test**：用 MiKTeX + XeLaTeX 实测 jayxin 模板电子版（`withoutpreface`）与纸质版（含承诺书/编号页）均编译通过。
+
 ## [1.3.1] - 2026-08-11
 
 质量与文档维护：修复断链、删除重复目录、校准 README、补充冒烟测试。

@@ -245,7 +245,12 @@ def prepare_project(
     output = _writable(output_dir)
     if output.exists():
         raise FileExistsError(f"输出目录已存在，拒绝覆盖：{output}")
-    source = (template_path or (TEMPLATE_ROOT / contest)).resolve()
+    named_template = Path(template_path) if template_path is not None else None
+    if named_template is not None and not named_template.exists():
+        builtin = TEMPLATE_ROOT / named_template
+        if builtin.exists():
+            named_template = builtin
+    source = (named_template or (TEMPLATE_ROOT / contest)).resolve()
     if not source.exists():
         raise FileNotFoundError(f"LaTeX 模板不存在：{source}")
     items = [source] if source.is_file() else [source, *source.rglob("*")]
@@ -552,6 +557,11 @@ def _bibliography_keys(
 
 def _graphic_roots(source: str, root: Path) -> list[Path]:
     directories = [root]
+    for class_file in sorted(root.rglob("*.cls")) + sorted(root.rglob("*.sty")):
+        try:
+            source += "\n" + class_file.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
     for group in re.findall(
         r"\\graphicspath\s*\{((?:\s*\{[^{}]*\}\s*)+)\}", source
     ):
@@ -1343,7 +1353,7 @@ def build_paper(
         isolated_main = isolated_root / main_argument
         isolated_output = isolated_root / "build"
         isolated_output.mkdir()
-        for command in commands:
+        def run_once(command: list[str]) -> None:
             started = time.monotonic()
             try:
                 completed = subprocess.run(
@@ -1370,6 +1380,24 @@ def build_paper(
             if completed.returncode != 0:
                 detail = combined.strip()[-2000:]
                 raise RuntimeError(f"LaTeX 编译失败：{detail or completed.returncode}")
+
+        for command in commands:
+            run_once(command)
+        if not latexmk:
+            rerun_marker = re.compile(
+                r"Rerun to get cross-references right|Label\(s\) may have changed|"
+                r"Rerun to get outlines right",
+                re.I,
+            )
+            for _ in range(2):
+                rerun_log = isolated_output / f"{main.stem}.log"
+                if not rerun_log.is_file():
+                    break
+                if not rerun_marker.search(
+                    rerun_log.read_text(encoding="utf-8", errors="replace")
+                ):
+                    break
+                run_once(command)
 
         isolated_pdf = isolated_output / f"{main.stem}.pdf"
         isolated_log = isolated_output / f"{main.stem}.log"
@@ -1555,7 +1583,11 @@ def _parser() -> argparse.ArgumentParser:
     init = commands.add_parser("init", help="从官方或内置模板初始化 LaTeX 项目")
     init.add_argument("output_dir", type=Path)
     init.add_argument("--contest", choices=sorted(CONTESTS), default="cumcm")
-    init.add_argument("--template", type=Path)
+    init.add_argument(
+        "--template",
+        type=Path,
+        help="官方模板目录，或内置模板名（如 cumcm-jayxin、cumcm、mcm-icm）",
+    )
     init.add_argument("--main", dest="main_file")
     init.add_argument("--template-source")
     init.add_argument("--template-version")
