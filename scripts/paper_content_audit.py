@@ -966,26 +966,80 @@ def audit_paper_structure(text: str) -> list[dict[str, Any]]:
 
     检查：必需章节齐全且顺序正确、摘要单独一页、优缺点各>=4条、
     改进方案、正文引用附录。返回发现的 FAIL 列表。
+
+    章节编号（一、/1.）与章节合并/拆分允许按官方模板变体：
+    “问题分析”可单独成节也可并入问题重述；“模型假设”与“符号说明”
+    可分开也可合并为“模型假设与符号说明”；结果部分接受“结果分析/
+    结果分析与讨论/模型检验”；稳健性/敏感性分析与灵敏度分析等价。
     """
     findings: list[dict[str, Any]] = []
+    heading = r"^\s*#+\s*"
+    num = r"(?:[一二三四五六七八九十1-9]+\s*[、.．]\s*)?"
     required = [
-        ("摘要", r"^\s*#+\s*摘要"),
-        ("问题重述", r"^\s*#+\s*[1一]\s*问题重述"),
-        ("模型假设与符号说明", r"^\s*#+\s*[2二]\s*模型假设与符号说明"),
-        ("模型建立与求解", r"^\s*#+\s*[3三]\s*模型建立与求解"),
-        ("结果分析与讨论", r"^\s*#+\s*[4四]\s*结果分析与讨论"),
-        ("灵敏度分析", r"^\s*#+\s*[5五]\s*灵敏度分析"),
-        ("模型评价与改进", r"^\s*#+\s*[6六]\s*模型评价与改进"),
-        ("参考文献", r"^\s*#+\s*参考文献"),
-        ("附录", r"^\s*#+\s*附录"),
+        ("摘要", re.compile(heading + r"摘要", re.M)),
+        ("问题重述", re.compile(heading + num + r"问题重述(?:与分析)?", re.M)),
+        (
+            "模型假设",
+            re.compile(heading + num + r"(?:模型假设(?:与|及|和)符号说明|模型假设)", re.M),
+        ),
+        ("符号说明", re.compile(heading + num + r"符号说明", re.M)),
+        (
+            "模型建立与求解",
+            re.compile(
+                heading
+                + num
+                + r"(?:模型建立与求解|模型的建立与求解|模型建立、求解|模型建立及求解)",
+                re.M,
+            ),
+        ),
+        (
+            "结果分析与讨论",
+            re.compile(
+                heading + num + r"(?:结果分析与讨论|结果分析|模型检验|求解结果与检验)",
+                re.M,
+            ),
+        ),
+        (
+            "灵敏度分析",
+            re.compile(heading + num + r"(?:灵敏度分析|敏感性分析|稳健性分析)", re.M),
+        ),
+        (
+            "模型评价与改进",
+            re.compile(
+                heading + num + r"(?:模型评价与改进|模型的评价与改进|模型评价|模型的评价)",
+                re.M,
+            ),
+        ),
+        ("参考文献", re.compile(heading + r"参考文献", re.M)),
+        ("附录", re.compile(heading + r"附录", re.M)),
     ]
-    positions: list[tuple[str, int]] = []
+    matches: dict[str, int] = {}
+    match_objects: dict[str, re.Match] = {}
     for name, pattern in required:
-        m = re.search(pattern, text, flags=re.M)
-        if not m:
-            findings.append(issue("FAIL", "missing_required_section", f"缺少必需章节：{name}"))
-            continue
-        positions.append((name, m.start()))
+        m = pattern.search(text)
+        if m:
+            matches[name] = m.start()
+            match_objects[name] = m
+    # 合并式“模型假设与符号说明”同时满足符号说明
+    if "符号说明" not in matches and "模型假设" in match_objects:
+        if "符号说明" in match_objects["模型假设"].group(0):
+            matches["符号说明"] = matches["模型假设"]
+    missing = [name for name, _ in required if name not in matches]
+    for name in missing:
+        findings.append(issue("FAIL", "missing_required_section", f"缺少必需章节：{name}"))
+    order = [
+        "摘要",
+        "问题重述",
+        "模型假设",
+        "符号说明",
+        "模型建立与求解",
+        "结果分析与讨论",
+        "灵敏度分析",
+        "模型评价与改进",
+        "参考文献",
+        "附录",
+    ]
+    positions = [(name, matches[name]) for name in order if name in matches]
     if len(positions) == len(required) and positions != sorted(positions, key=lambda x: x[1]):
         findings.append(issue("FAIL", "section_order_wrong", "必需章节顺序错误，应按规范排列"))
 
@@ -1024,8 +1078,10 @@ def audit_text(
     forbidden_terms: tuple[str, ...] = (),
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     clean = strip_code_fences(text)
-    findings = audit_paper_structure(clean)
-    findings, formula_metrics = audit_formulas(clean, strict, min_equations)
+    findings: list[dict[str, Any]] = []
+    findings.extend(audit_paper_structure(clean))
+    formula_findings, formula_metrics = audit_formulas(clean, strict, min_equations)
+    findings.extend(formula_findings)
     figure_findings, visual_metrics = audit_figures_and_tables(clean, strict, min_figures, project_root)
     findings.extend(figure_findings)
     findings.extend(audit_table_references(clean, strict))
@@ -1063,12 +1119,32 @@ def audit_text(
     if question_count >= 2 and not re.search(r"误差传播|继承.+(?:变量|公式|结果|字段)|与前问的衔接", clean):
         findings.append(issue("FAIL" if strict else "WARN", "question_linkage_not_specific", "问题间关联未具体说明共享变量、公式、结果字段或误差传播"))
 
+    ledger_physical = False
+    ledger_margin = False
+    if project_root is not None:
+        ledger_path = project_root / "derivation-ledger.json"
+        if ledger_path.is_file():
+            try:
+                ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+                for model in ledger.get("models") or []:
+                    physical_goal = str(model.get("physical_goal") or "").strip()
+                    if model.get("direct_physical_objective_trial") or (
+                        physical_goal and physical_goal not in ("无", "不适用", "N/A", "没有")
+                    ):
+                        ledger_physical = True
+                ledger_margin = bool(ledger.get("engineering_margins"))
+            except (json.JSONDecodeError, OSError):
+                pass
     required_sections = {
         "cross_validation_section": r"^\s*#+.*(?:交叉验证|独立方法验证)",
-        "sensitivity_section": r"^\s*#+.*灵敏度分析",
-        "objective_alignment_section": r"^\s*#+.*(?:物理目标与优化目标|优化目标.*物理目标)",
-        "engineering_margin_section": r"^\s*#+.*(?:工程裕度|安全裕度)",
+        "sensitivity_section": r"^\s*#+.*(?:灵敏度分析|敏感性分析|稳健性分析)",
     }
+    if ledger_physical:
+        required_sections["objective_alignment_section"] = (
+            r"^\s*#+.*(?:物理目标与优化目标|优化目标.*物理目标)"
+        )
+    if ledger_margin:
+        required_sections["engineering_margin_section"] = r"^\s*#+.*(?:工程裕度|安全裕度)"
     for code, pattern in required_sections.items():
         if strict and not re.search(pattern, clean, flags=re.M):
             findings.append(issue("FAIL", code, f"完整竞赛论文缺少必要小节：{code}"))

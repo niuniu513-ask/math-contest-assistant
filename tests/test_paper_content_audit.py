@@ -91,7 +91,17 @@ $$e_ij=10^-5$$
                 (root / "figures" / f"f{index}.svg").write_text(svg, encoding="utf-8")
 
             parts = [
+                "# 摘要",
+                "本文针对某连续优化问题建立完整模型体系，完成求解、验证与灵敏度分析。",
+                "关键词：优化；敏感性",
+                "\\newpage",
+                "# 一、问题重述",
+                "按题目要求重述优化问题，明确输入、约束与输出。",
+                "# 二、模型假设与符号说明",
+                "模型假设与符号说明合并列出，符号与正文一致。",
+                "# 三、模型建立与求解",
                 "# 问题一：模型建立",
+                "# 四、结果分析与讨论",
                 "## 交叉验证",
                 "两种独立计算方法采用相同输入，以相对误差评价一致性。",
                 "## 灵敏度分析",
@@ -116,8 +126,23 @@ $$e_ij=10^-5$$
             for number in range(1, 13):
                 parts.extend([
                     f"![图{number} 真实结果](figures/f{number}.svg)",
-                    f"图中结果显示第{number}组在参数为{number}时达到最大值{number + 1}，随后下降至{number * 0.8:.1f}，相对降幅为20%。该转折由约束逐渐活跃导致，异常区域集中在边界附近，说明继续增大参数不能改善物理目标；工程上应采用当前范围，并把边界外区域列为模型失效风险。",
+                f"图中结果显示第{number}组在参数为{number}时达到最大值{number + 1}，随后下降至{number * 0.8:.1f}，相对降幅为20%。该转折由约束逐渐活跃导致，异常区域集中在边界附近，说明继续增大参数不能改善物理目标；工程上应采用当前范围，并把边界外区域列为模型失效风险。",
                 ])
+            parts.extend([
+                "# 五、模型评价与改进",
+                "## 模型优点",
+                "1. 结构可解释",
+                "2. 计算高效",
+                "3. 参数较少",
+                "4. 边界可解析",
+                "## 模型缺点",
+                "1. 线性近似限制",
+                "2. 单峰假设约束",
+                "3. 依赖数据质量",
+                "4. 高维退化风险",
+                "## 改进方案",
+                "引入自适应步长与全局搜索作为改进方案。",
+            ])
             parts.append("# 参考文献")
             references = [
                 "Nocedal J, Wright S J. Numerical Optimization[M]. Springer, 2006.",
@@ -130,6 +155,10 @@ $$e_ij=10^-5$$
                 "ISO. Guide to the Expression of Uncertainty in Measurement[S]. ISO, 2008.",
             ]
             parts.extend(f"[{number}] {entry}" for number, entry in enumerate(references, 1))
+            parts.extend([
+                "# 附录",
+                "附录 A 包含全部源代码与支撑材料文件列表；正文推导与结论证据见附录各节。",
+            ])
             text = "\n\n".join(parts)
             text_findings, text_metrics = AUDIT.audit_text(text, True, 15, 12, 8, root)
 
