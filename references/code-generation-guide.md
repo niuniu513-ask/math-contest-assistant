@@ -2,6 +2,62 @@
 
 > 本文件中的代码是教学模式和局部示例，不是所有赛题的强制骨架。先遵循 `编程工作流程.md` 和当前模型合同，再按需复用相关片段。示例中的数据、参数范围、评估指标和图表不得直接当作当前题结果。
 
+## 公共代码头与两阶段执行（强制基线）
+
+### 公共代码头（Python 默认模板）
+
+每个新建求解脚本以公共头开始，按实际依赖裁剪，但保留中文字体配置与统一输出封装：
+
+```python
+import sys, io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
+import os, warnings
+warnings.filterwarnings('ignore')
+import numpy as np
+import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+plt.rcParams['font.sans-serif'] = [
+    'Microsoft YaHei', 'SimHei', 'STHeiti', 'Heiti TC',
+    'Arial Unicode MS', 'Hiragino Sans GB', 'PingFang SC',
+    'Songti SC', 'DejaVu Sans',
+]
+plt.rcParams['axes.unicode_minus'] = False
+plt.rcParams['figure.dpi'] = 150
+plt.rcParams['savefig.dpi'] = 150
+plt.rcParams['savefig.bbox'] = 'tight'
+
+PROJECT_ROOT = os.environ.get('PROJECT_ROOT') or os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__)))
+FIG_DIR = os.path.join(PROJECT_ROOT, 'figures')
+OUT_DIR = os.path.join(PROJECT_ROOT, 'results')
+os.makedirs(FIG_DIR, exist_ok=True)
+os.makedirs(OUT_DIR, exist_ok=True)
+
+def save_fig(fig, name):
+    """保存图片；文件名与论文引用一致（中文论文可中文名，美赛一律英文）。"""
+    fig.savefig(os.path.join(FIG_DIR, name))
+    plt.close(fig)
+
+def save_csv(df, name):
+    df.to_csv(os.path.join(OUT_DIR, name), index=False, encoding='utf-8-sig')
+```
+
+- `sys.stdout` UTF-8 重包装：解决 Windows 中文乱码，脚本内所有中文输出都依赖这两行。
+- matplotlib 用 Agg 后端（无界面），统一跨平台中文字体列表与 `axes.unicode_minus=False`；输出 150 DPI、tight bbox。
+- 落盘统一走 `save_fig`/`save_csv`：图片进 `figures/`、结果进 `results/`（相对 `PROJECT_ROOT`，可用环境变量覆盖）；文件名与论文引用一致，LaTeX 模板（cumcm-jayxin）建议英文/数字命名避免编码问题。
+
+### 两阶段执行（先算后画）
+
+1. **第一阶段纯计算**：加载 → 预处理 → 建模 → 求解，得到全部数值结果；打印每组数据的 min/max/mean/std/CV/amplitude 等统计量，供论文直接引用，避免“先画图再回填数字”。
+2. **第二阶段绘图**：数值检查通过后统一画图，每题至少 4–6 张覆盖主要分析维度；图内不写 `set_title`（标题由论文 `\caption{}` 承担）；坐标轴标签、刻度、图例与论文语言一致（中文论文全中文，美赛全英文）。
+3. 已有 CSV/图片直接复用，不重复计算；输出文件与论文引用一一对应。
+
+该两阶段规则同样适用于 MATLAB 求解脚本：先完成全部计算并打印统计量，再统一 `apply_publication_style` 绘图。
+
 ## 一、示例代码骨架（按任务裁剪）
 
 ```python

@@ -2,6 +2,15 @@
 
 版本遵循语义化版本（SemVer）：`主版本.次版本.修订`。每次发布更新 `VERSION` 文件并在本文件追加记录；提交信息使用 conventional commits（`feat:`/`fix:`/`refactor:` 等，subject 简洁、≤72 字符、祈使语气，详细说明放正文）。
 
+## [1.4.4] - 2026-08-12
+
+吸取 Mrite 项目经验，落地四项可执行规范：公共代码头、求解计划模板、摘要三类模板、表格防溢出规则。
+
+- **feat**：`code-generation-guide.md` 新增“公共代码头与两阶段执行（强制基线）”：Python 公共头（UTF-8 中文输出、matplotlib 跨平台中文字体、`save_fig`/`save_csv` 统一落盘）、先算后画两阶段（计算阶段打印 min/max/mean/std/CV/amplitude 供论文引用，绘图阶段不写 `set_title`）。
+- **feat**：新增 `references/求解计划模板.md`（六段式：总体方向/各题思路+方法匹配表/输出标准/操作步骤/文件清单/异常预案）与对话内计划状态列表（✅/🔄/⏳，每步完成重输出完整列表）；`建模工作流程.md`、`自主解题协议.md`、SKILL.md 分阶段加载表同步接入。
+- **feat**：`论文写作工作流.md` 新增摘要三类模板（有数据建模型/无数据机理优化/建议总结）+ 编译后一页校验（LaTeX 用 `abstract:end` 标签读页码，Word 渲染后检查独占一页）。
+- **feat**：`LaTeX格式规范-new.md` 新增表格防溢出规则：全宽/跨页表统一 `longtable` + `>{\centering\arraybackslash}p{}`，列宽比例总和 = 1.04 − 0.04×N，`caption/label/\\` 固定写法与 `endfirsthead/endhead/endfoot` 结构，编译后复查 Overfull。
+
 ## [1.4.3] - 2026-08-11
 
 修复结构审计与 DOCX 公式转换在真实 2022C 重构中的缺口。

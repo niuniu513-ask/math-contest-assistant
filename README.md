@@ -117,7 +117,7 @@ git clone https://github.com/<your-username>/math-contest-assistant.git ~/.winds
 math-contest-assistant/
 ├── SKILL.md                    # 主技能定义
 ├── README.md                   # 本文件
-├── references/                 # 参考文档（41 个 .md）
+├── references/                 # 参考文档（42 个 .md）
 │   ├── Subagent调度.md         #   模式 A 质检调度规则
 │   ├── 算法索引.md             #   算法速查路由
 │   ├── code-generation-guide.md #  20 类方法代码模板（835行）

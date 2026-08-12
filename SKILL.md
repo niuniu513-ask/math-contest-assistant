@@ -64,7 +64,7 @@ python "<SKILL_ROOT>/scripts/project_state.py" status --project-root "<PROJECT_R
 |---|---|---|
 | 跨技能协同 | `references/技能协同协议.md` | 当前阶段所需的外部 Skill |
 | 题目与附件解析 | `references/自主解题协议.md` | `tools/pdf/SKILL.md`、`tools/xlsx/SKILL.md` |
-| 建模与选型 | `references/建模工作流程.md`、`references/建模质检清单.md`、`references/语言选型对比.md` | `references/算法索引.md`、相关 `assets/*.md`、`assets/08-晴天资料方法卡.md`、`references/model-catalog-guide.md`、`references/建模常见模式.md`、`references/建模设计理论.md`、`references/模型合同.md` |
+| 建模与选型 | `references/建模工作流程.md`、`references/建模质检清单.md`、`references/语言选型对比.md` | `references/算法索引.md`、相关 `assets/*.md`、`assets/08-晴天资料方法卡.md`、`references/model-catalog-guide.md`、`references/建模常见模式.md`、`references/建模设计理论.md`、`references/模型合同.md`、`references/求解计划模板.md` |
 | 使用往届资料 | `references/语料证据使用指南.md` | `references/获奖论文实读方法论.md`、`references/contest-questions-database.md`、`references/award-paper-patterns*.md` |
 | 编程与复现 | `references/编程工作流程.md`、`references/编程质检清单.md`、`scientific-toolkit-skill` | `references/code-generation-guide.md`、`references/MATLAB规范.md`、`references/MATLAB代码生成规范.md`、`references/MATLAB常见图表模式.md`、`references/MATLAB配色参考.md`、`references/MATLAB示意图绘制规范.md`、`references/编程常见模式.md`、`scripts/*.m`、`scripts/safe_executor.py`（沙箱执行）、`scripts/check_env.py`（环境检查）、`tools/xlsx/SKILL.md` |
 | 图表 | `references/可视化规范.md` | `references/图表选择与避坑.md`、`references/物理示意图绘制规范.md`、`scripts/schematic_pptx.py` |
