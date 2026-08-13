@@ -52,10 +52,11 @@ APPENDIX_RE = re.compile(r"\\appendix\b|\\begin\s*\{appendices\}")
 QUALITY_DEFAULTS = {
     "cumcm": {
         "min_content_units": 0,
-        "min_pages": 0,
-        "min_equations": 0,
-        "min_figures": 0,
+        "min_pages": 20,
+        "min_equations": 15,
+        "min_figures": 12,
         "min_tables": 0,
+        "max_pages": 25,
     },
     "mcm-icm": {
         "min_content_units": 0,
@@ -635,8 +636,20 @@ def _thresholds(
     if max_pages is not None and max_pages <= 0:
         raise ValueError("max_pages 必须为正整数")
     defaults = QUALITY_DEFAULTS[contest] if quality_checks else {}
+    default_max_pages = int(defaults.get("max_pages", 0))
+    if quality_checks and max_pages is None:
+        max_pages = default_max_pages or None
     thresholds: dict[str, int] = {}
     overrides = []
+    if quality_checks and default_max_pages and max_pages is not None and max_pages > default_max_pages:
+        if not override_reason or not override_reason.strip():
+            raise ValueError(f"放宽 max_pages 超过内部质量档 {default_max_pages} 必须提供 override_reason")
+        overrides.append({
+            "name": "max_pages",
+            "default": default_max_pages,
+            "value": max_pages,
+            "reason": override_reason.strip(),
+        })
     for key, explicit in values.items():
         if explicit is not None and explicit < 0:
             raise ValueError(f"{key} 不能为负数")

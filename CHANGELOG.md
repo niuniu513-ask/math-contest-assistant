@@ -2,6 +2,13 @@
 
 版本遵循语义化版本（SemVer）：`主版本.次版本.修订`。每次发布更新 `VERSION` 文件并在本文件追加记录；提交信息使用 conventional commits（`feat:`/`fix:`/`refactor:` 等，subject 简洁、≤72 字符、祈使语气，详细说明放正文）。
 
+## [1.4.5] - 2026-08-13
+
+恢复国赛正文篇幅质量档（20~25 页）并强化论文质量门禁。
+
+- **feat**：CUMCM 内部质量档定为正文（不含附录）20~25 页（官方 2026 上限 30）：`latex_paper.py` 的 `--quality-checks` 默认 `min_pages=20`、`max_pages=25`、`min_equations=15`、`min_figures=12`；超过 25 页需显式放宽并附 `--override-reason`。
+- **docs**：`论文结构硬性要求.md`、`paper-format-cumcm.md`、`论文写作工作流.md`、`论文格式规范-word.md`、`深度写作与竞争力门禁.md`、`论文自审框架.md`、`LaTeX格式规范-new.md`、`tools/latex/SKILL.md`、SKILL.md 同步“20~25 页内部质量档 + 官方 30 页上限”口径，并把“每问至少 1 幅结果图、全篇 ≥12 图、公式 ≥15”写进写作预算与 W2 检查。
+
 ## [1.4.4] - 2026-08-12
 
 吸取 Mrite 项目经验，落地四项可执行规范：公共代码头、求解计划模板、摘要三类模板、表格防溢出规则。
