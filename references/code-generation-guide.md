@@ -53,7 +53,7 @@ def save_csv(df, name):
 ### 两阶段执行（先算后画）
 
 1. **第一阶段纯计算**：加载 → 预处理 → 建模 → 求解，得到全部数值结果；打印每组数据的 min/max/mean/std/CV/amplitude 等统计量，供论文直接引用，避免“先画图再回填数字”。
-2. **第二阶段绘图**：数值检查通过后统一画图，每题至少 4–6 张覆盖主要分析维度；图内不写 `set_title`（标题由论文 `\caption{}` 承担）；坐标轴标签、刻度、图例与论文语言一致（中文论文全中文，美赛全英文）。
+2. **第二阶段绘图**：数值检查通过后统一画图，每题至少 4–6 张覆盖主要分析维度；图内不写 `set_title`（标题由论文 `\caption{}` 承担）；中文竞赛（国赛等）图内文字必须全中文——坐标轴标签、刻度、图例、注释、面板编号全部中文（化学式/单位等专业符号除外），**禁止直接把英文列名、变量名、聚类标签（如 `highK`、`Cluster_0`、`PC1`）当作图例，必须先用中文映射再绘图**；美赛全英文。
 3. 已有 CSV/图片直接复用，不重复计算；输出文件与论文引用一一对应。
 
 该两阶段规则同样适用于 MATLAB 求解脚本：先完成全部计算并打印统计量，再统一 `apply_publication_style` 绘图。
@@ -294,7 +294,7 @@ ax1.plot(t_smooth, y_smooth, 'b-', linewidth=2, alpha=0.8,
         label=f'模型拟合 (R²={r_squared:.3f})')
 ax1.set_xlabel('时间 (s)', fontsize=12)
 ax1.set_ylabel('值', fontsize=12)
-ax1.set_title('数据与模型拟合对比', fontsize=14, fontweight='bold')
+# 图内不写标题，标题由论文 \caption{} 承担
 ax1.legend(loc='best', fontsize=10)
 ax1.grid(True, alpha=0.3)
 
@@ -307,7 +307,7 @@ ax2.fill_between(time_points, -2*np.std(residuals), 2*np.std(residuals),
                  alpha=0.2, color='gray', label='±2σ')
 ax2.set_xlabel('时间 (s)', fontsize=12)
 ax2.set_ylabel('残差', fontsize=12)
-ax2.set_title(f'残差分布 (σ={np.std(residuals):.4f})', fontsize=14, fontweight='bold')
+# 图内不写标题，标题由论文 \caption{} 承担
 ax2.legend(loc='best', fontsize=10)
 ax2.grid(True, alpha=0.3)
 
@@ -319,7 +319,7 @@ if len(bootstrap_params) > 10:
                 label=f'{param_names[i]} ({np.mean(bootstrap_params[:, i]):.3f}±{np.std(bootstrap_params[:, i]):.3f})')
     ax3.set_xlabel('参数值', fontsize=12)
     ax3.set_ylabel('频数', fontsize=12)
-    ax3.set_title(f'Bootstrap 参数分布 (n={len(bootstrap_params)})', fontsize=14, fontweight='bold')
+    # 图内不写标题，标题由论文 \caption{} 承担
     ax3.legend(loc='best', fontsize=9)
     ax3.grid(True, alpha=0.3)
 
@@ -336,7 +336,7 @@ bars = ax4.barh(y_pos, max_changes, color=colors, edgecolor='black', linewidth=0
 ax4.set_yticks(y_pos)
 ax4.set_yticklabels(param_names)
 ax4.set_xlabel('最大输出变化 (%)')
-ax4.set_title('参数灵敏度分析 (±20%)', fontsize=14, fontweight='bold')
+# 图内不写标题，标题由论文 \caption{} 承担
 ax4.axvline(x=3, color='orange', linestyle='--', linewidth=1, alpha=0.5, label='中灵敏度阈值')
 ax4.axvline(x=10, color='red', linestyle='--', linewidth=1, alpha=0.5, label='高灵敏度阈值')
 for bar, val in zip(bars, max_changes):
@@ -345,7 +345,7 @@ for bar, val in zip(bars, max_changes):
 ax4.legend(loc='lower right', fontsize=8)
 ax4.grid(True, alpha=0.3, axis='x')
 
-plt.suptitle(f'问题N求解结果 — {optimal_params}', fontsize=16, fontweight='bold', y=1.01)
+# 图内不写总标题，标题由论文 \caption{} 承担
 plt.tight_layout()
 plt.savefig('qN_results.pdf', dpi=300, bbox_inches='tight', 
             facecolor='white', edgecolor='none')
@@ -929,7 +929,7 @@ def create_standard_figure(data, prediction, residuals, sensitivity):
     ax1.plot(x_smooth, y_pred, '#2980b9', lw=2, label='拟合')
     ax1.set_xlabel('x', fontsize=12)
     ax1.set_ylabel('y', fontsize=12)
-    ax1.set_title('(a) 数据与模型拟合', fontsize=13, fontweight='bold')
+    # 图内不写标题，标题由论文 \caption{} 承担
     ax1.legend(loc='best')
     ax1.grid(True, alpha=0.3)
     
@@ -941,20 +941,20 @@ def create_standard_figure(data, prediction, residuals, sensitivity):
                      alpha=0.2, color='gray')
     ax2.set_xlabel('x', fontsize=12)
     ax2.set_ylabel('残差', fontsize=12)
-    ax2.set_title('(b) 残差分布', fontsize=13, fontweight='bold')
+    # 图内不写标题，标题由论文 \caption{} 承担
     ax2.grid(True, alpha=0.3)
     
     # (3) 左下：Q-Q图或收敛曲线
     ax3 = fig.add_subplot(2, 2, 3)
     from scipy import stats
     stats.probplot(residuals, dist="norm", plot=ax3)
-    ax3.set_title('(c) Q-Q 正态性检验', fontsize=13, fontweight='bold')
+    # 图内不写标题，标题由论文 \caption{} 承担
     ax3.grid(True, alpha=0.3)
     
     # (4) 右下：灵敏度分析
     ax4 = fig.add_subplot(2, 2, 4)
     # [灵敏度龙卷风图或折线图]
-    ax4.set_title('(d) 参数灵敏度分析', fontsize=13, fontweight='bold')
+    # 图内不写标题，标题由论文 \caption{} 承担
     ax4.grid(True, alpha=0.3)
     
     plt.tight_layout()
