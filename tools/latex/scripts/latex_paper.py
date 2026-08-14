@@ -1321,7 +1321,7 @@ def build_paper(
         mode = {"xelatex": "-xelatex", "lualatex": "-lualatex", "pdflatex": "-pdf"}[
             engine
         ]
-        commands = [[
+        commands = [([
             latexmk,
             "-norc",
             "-gg",
@@ -1333,20 +1333,29 @@ def build_paper(
             "-file-line-error",
             f"-outdir={output_argument}",
             main_argument,
-        ]]
+        ], "root")]
     elif executable:
-        if re.search(r"\\(?:bibliography|addbibresource)\b", source):
-            raise RuntimeError("未找到可执行的 latexmk，含外部参考文献的论文无法完成可靠编译")
         command = [
             executable,
             "-no-shell-escape",
             "-interaction=nonstopmode",
             "-halt-on-error",
             "-file-line-error",
-            f"-output-directory={output_argument}",
             main_argument,
         ]
-        commands = [command, command]
+        if re.search(r"\\(?:bibliography|addbibresource)\b", source):
+            if re.search(r"\\addbibresource\b", source):
+                bib_command = ["biber", Path(main_argument).with_suffix("").name]
+            else:
+                bib_command = ["bibtex", Path(main_argument).with_suffix("").name]
+            commands = [
+                (command, "root"),
+                (bib_command, "root"),
+                (command, "root"),
+                (command, "root"),
+            ]
+        else:
+            commands = [(command, "root"), (command, "root")]
     else:
         raise RuntimeError(f"未找到 {engine}，无法编译 LaTeX 论文")
 
@@ -1366,12 +1375,12 @@ def build_paper(
         isolated_main = isolated_root / main_argument
         isolated_output = isolated_root / "build"
         isolated_output.mkdir()
-        def run_once(command: list[str]) -> None:
+        def run_once(command: list[str], cwd_key: str = "root") -> None:
             started = time.monotonic()
             try:
                 completed = subprocess.run(
                     command,
-                    cwd=isolated_root,
+                    cwd=isolated_output if cwd_key == "build" else isolated_root,
                     check=False,
                     capture_output=True,
                     text=True,
@@ -1393,9 +1402,13 @@ def build_paper(
             if completed.returncode != 0:
                 detail = combined.strip()[-2000:]
                 raise RuntimeError(f"LaTeX 编译失败：{detail or completed.returncode}")
+            if not latexmk:
+                root_log = isolated_root / f"{main.stem}.log"
+                if root_log.is_file():
+                    shutil.copy2(root_log, isolated_output / f"{main.stem}.log")
 
-        for command in commands:
-            run_once(command)
+        for command, cwd_key in commands:
+            run_once(command, cwd_key)
         if not latexmk:
             rerun_marker = re.compile(
                 r"Rerun to get cross-references right|Label\(s\) may have changed|"
@@ -1410,7 +1423,12 @@ def build_paper(
                     rerun_log.read_text(encoding="utf-8", errors="replace")
                 ):
                     break
-                run_once(command)
+                run_once(command, "root")
+        if not latexmk:
+            root_pdf = isolated_root / f"{main.stem}.pdf"
+            if root_pdf.is_file():
+                shutil.copy2(root_pdf, isolated_output / f"{main.stem}.pdf")
+                root_pdf.unlink()
 
         isolated_pdf = isolated_output / f"{main.stem}.pdf"
         isolated_log = isolated_output / f"{main.stem}.log"

@@ -26,7 +26,7 @@ python "<SKILL_ROOT>/tools/latex/scripts/latex_paper.py" doctor `
 
 仅生成 LaTeX/PDF 时省略 `--need-pandoc`。诊断会检查 `latexmk`、所选引擎、BibTeX/Biber、`pypdf`、`pdfimages`、`pdftoppm`，需要生成 Word 时再检查 Pandoc。任一必需项缺失都先报告阻塞，不要写完整论文后才发现无法编译或校验。
 
-Windows 下 MiKTeX 的 `latexmk` 还需要 Perl 脚本引擎；`doctor` 报 latexmk 缺失但引擎可用，通常就是没装 Perl。此时对不含外部 BibTeX/BibLaTeX 文献库的项目，可按下方回退规则用连续多次引擎编译（至少两遍，检测到 rerun 提示会自动补跑），不要静默换用 pdflatex。
+Windows 下 MiKTeX 的 `latexmk` 还需要 Perl 脚本引擎；`doctor` 报 latexmk 缺失但引擎可用，通常就是没装 Perl。此时按下方回退规则用连续多次引擎编译（至少两遍，检测到 rerun 提示会自动补跑）；含外部 BibTeX/BibLaTeX 文献库的项目会自动插入 bibtex/biber 步骤（引擎→bibtex/biber→引擎×2），不要静默换用 pdflatex。
 
 ## 模板优先级
 
@@ -81,7 +81,7 @@ python "<SKILL_ROOT>/tools/latex/scripts/latex_paper.py" bind `
 
 ## 编译
 
-优先使用 `latexmk` 管理交叉引用和参考文献；未安装时，只对不含外部 BibTeX/BibLaTeX 文献库的项目回退为连续多次运行指定引擎（至少两遍，检测到 rerun 提示会自动补跑至多两遍）。含外部文献库的完整论文必须安装 `latexmk`。默认使用 XeLaTeX，且不启用 shell escape。实际编译在系统临时目录中的完整项目副本执行，真实源码目录保持只读语义；编译后再次比较副本与原始源码哈希，任何改写都会阻断发布。
+优先使用 `latexmk` 管理交叉引用和参考文献；未安装时回退为连续多次运行指定引擎（至少两遍，检测到 rerun 提示会自动补跑至多两遍），含外部 BibTeX/BibLaTeX 文献库的项目会自动插入 bibtex/biber 步骤（引擎→bibtex/biber→引擎×2）。默认使用 XeLaTeX，且不启用 shell escape。实际编译在系统临时目录中的完整项目副本执行，真实源码目录保持只读语义；编译后再次比较副本与原始源码哈希，任何改写都会阻断发布。
 
 ```powershell
 python "<SKILL_ROOT>/tools/latex/scripts/latex_paper.py" build `

@@ -2,6 +2,15 @@
 
 版本遵循语义化版本（SemVer）：`主版本.次版本.修订`。每次发布更新 `VERSION` 文件并在本文件追加记录；提交信息使用 conventional commits（`feat:`/`fix:`/`refactor:` 等，subject 简洁、≤72 字符、祈使语气，详细说明放正文）。
 
+## [1.4.7] - 2026-08-14
+
+修复无 latexmk 环境下含外部文献库项目无法构建的问题，并恢复 v1.3 同款稳健中文字体选择。
+
+- **fix**：`latex_paper.py build` 未找到 latexmk 时不再拒绝含 BibTeX/BibLaTeX 的项目，自动回退为“引擎 → bibtex/biber → 引擎 ×2”（bibtex/biber 在 `build/` 目录执行），解决 2021B 这类交付在本机无 Perl 环境无法 `build` 的问题。
+- **fix**：`code-generation-guide.md` 公共代码头的中文字体从静态列表改为**动态选择已安装字体**（SimHei/YaHei/Noto Sans CJK 等优先，v1.3 同款逻辑），未检测到中文字体时警告并要求报告 BLOCKED，避免缺字体机器上图表文字乱码/缺字。
+- **fix**：图表文字语言规则从“中文题必须全中文”调整为“可读中英文均可、同一图内尽量一致”，核心约束改为禁止变量名/列名/聚类标签直接当图例（如 `highK`、`Cluster_0`、`PC1`），保留乱码/缺字检查。
+- **docs**：`可视化规范.md` 补充“中文字体动态选择 + 导出前缺字检查”；`tools/latex/SKILL.md`、`LaTeX格式规范-new.md` 同步无 latexmk 回退说明。
+
 ## [1.4.6] - 2026-08-13
 
 修复中文竞赛图例/图内文字英文问题，并消除示例骨架与“图内不写标题”规则的矛盾。
