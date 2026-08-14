@@ -2,6 +2,13 @@
 
 版本遵循语义化版本（SemVer）：`主版本.次版本.修订`。每次发布更新 `VERSION` 文件并在本文件追加记录；提交信息使用 conventional commits（`feat:`/`fix:`/`refactor:` 等，subject 简洁、≤72 字符、祈使语气，详细说明放正文）。
 
+## [1.4.9] - 2026-08-14
+
+修复中文字体选择未校验字形覆盖导致负号 −/℃ 缺字的问题。
+
+- **fix**：`code-generation-guide.md` 公共代码头与 `scripts/plot_style.py` 的选字逻辑增加字形覆盖校验（U+2212 负号、℃、°），优先选择同时含这些字形的字体（Noto Sans CJK/Source Han Sans/Noto Sans SC/Microsoft YaHei 等），避免 SimHei 等字体缺负号导致图中出现方框。
+- **fix**：找不到含完整字形的中文字体时，回退到已安装中文字体并给出明确警告（建议用 ASCII 连字符 `-` 或更换字体）。
+
 ## [1.4.8] - 2026-08-14
 
 图表文字规则恢复 v1.3 口径：移除语言与图例命名红线，只保留字体可用与导出前缺字/乱码检查。

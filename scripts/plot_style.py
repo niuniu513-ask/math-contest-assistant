@@ -67,16 +67,34 @@ WIDTHS_IN = {
 _CJK_SANS = (
     "Noto Sans CJK SC",
     "Source Han Sans SC",
+    "Noto Sans SC",
     "Microsoft YaHei",
     "SimHei",
     "PingFang SC",
 )
+
+_NEEDED_GLYPHS = (0x2212, 0x2103, 0x00B0)  # − ℃ °
 
 
 def _available_fonts() -> set[str]:
     from matplotlib import font_manager
 
     return {item.name for item in font_manager.fontManager.ttflist}
+
+
+def _font_covers(font_name: str) -> bool:
+    from matplotlib import font_manager
+    from matplotlib.ft2font import FT2Font
+
+    try:
+        path = font_manager.findfont(
+            font_manager.FontProperties(family=font_name),
+            fallback_to_default=False,
+        )
+        cmap = FT2Font(path).get_charmap()
+        return all(ch in cmap for ch in _NEEDED_GLYPHS)
+    except Exception:
+        return False
 
 
 def choose_font(language: str = "zh") -> str:
@@ -86,9 +104,19 @@ def choose_font(language: str = "zh") -> str:
         raise ValueError("language 只能是 'zh' 或 'en'")
     available = _available_fonts()
     if language == "zh":
+        fallback = ""
         for name in _CJK_SANS:
             if name in available:
-                return name
+                if _font_covers(name):
+                    return name
+                fallback = fallback or name
+        if fallback:
+            warnings.warn(
+                f"中文字体 {fallback} 缺少负号 −/℃ 等字形，请用 ASCII 连字符 \"-\" 或更换字体。",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            return fallback
         warnings.warn(
             "未检测到常用中文字体，已回退到 DejaVu Sans；导出前必须检查中文和特殊符号是否缺字。",
             RuntimeWarning,

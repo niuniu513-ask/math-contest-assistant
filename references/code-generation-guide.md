@@ -21,11 +21,26 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from matplotlib import font_manager as _font_manager
-_CJK_FONT_PREF = ['SimHei', 'Microsoft YaHei', 'Noto Sans CJK SC',
-                  'Source Han Sans SC', 'WenQuanYi Zen Hei', 'PingFang SC',
-                  'Heiti SC', 'STHeiti', 'Songti SC', 'Arial Unicode MS']
+from matplotlib.ft2font import FT2Font as _FT2Font
+_CJK_FONT_PREF = ['Noto Sans CJK SC', 'Source Han Sans SC', 'Noto Sans SC',
+                  'Microsoft YaHei', 'PingFang SC', 'Heiti SC', 'STHeiti',
+                  'SimHei', 'Songti SC', 'WenQuanYi Zen Hei', 'Arial Unicode MS']
+_NEED_GLYPHS = (0x2212, 0x2103, 0x00B0)  # − ℃ °
+def _font_covers(name):
+    try:
+        path = _font_manager.findfont(
+            _font_manager.FontProperties(family=name), fallback_to_default=False)
+        return all(ch in _FT2Font(path).get_charmap() for ch in _NEED_GLYPHS)
+    except Exception:
+        return False
 _installed_fonts = {f.name for f in _font_manager.fontManager.ttflist}
-_cjk_font = next((n for n in _CJK_FONT_PREF if n in _installed_fonts), None)
+_cjk_font = next((n for n in _CJK_FONT_PREF
+                  if n in _installed_fonts and _font_covers(n)), None)
+if _cjk_font is None:
+    _cjk_font = next((n for n in _CJK_FONT_PREF if n in _installed_fonts), None)
+    if _cjk_font is not None:
+        import warnings as _warnings
+        _warnings.warn(f'中文字体 {_cjk_font} 缺少负号 −/℃ 等字形，请用 ASCII 连字符 "-" 或更换字体。', RuntimeWarning)
 if _cjk_font is None:
     import warnings as _warnings
     _warnings.warn('未检测到常用中文字体，导出前必须检查中文是否缺字。', RuntimeWarning)
