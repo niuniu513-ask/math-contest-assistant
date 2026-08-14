@@ -53,13 +53,13 @@ def save_csv(df, name):
 ```
 
 - `sys.stdout` UTF-8 重包装：解决 Windows 中文乱码，脚本内所有中文输出都依赖这两行。
-- matplotlib 用 Agg 后端（无界面），**动态选择已安装的中文字体**（SimHei/YaHei/Noto Sans CJK 等优先），避免静态字体表在缺字体机器上产生乱码/缺字；未检测到中文字体时给出警告，此时必须报告 BLOCKED，不得提交缺字图。`axes.unicode_minus=False` 保证负号正常；输出 150 DPI、tight bbox。
+- matplotlib 用 Agg 后端（无界面），**动态选择已安装的中文字体**（SimHei/YaHei/Noto Sans CJK 等优先，与 v1.3 `plot_style.choose_font` 一致），避免缺字体机器上产生乱码/缺字；未检测到中文字体时给出警告，导出前必须检查中文和特殊符号是否缺字。`axes.unicode_minus=False` 保证负号正常；输出 150 DPI、tight bbox。
 - 落盘统一走 `save_fig`/`save_csv`：图片进 `figures/`、结果进 `results/`（相对 `PROJECT_ROOT`，可用环境变量覆盖）；文件名与论文引用一致，LaTeX 模板（cumcm-jayxin）建议英文/数字命名避免编码问题。
 
 ### 两阶段执行（先算后画）
 
 1. **第一阶段纯计算**：加载 → 预处理 → 建模 → 求解，得到全部数值结果；打印每组数据的 min/max/mean/std/CV/amplitude 等统计量，供论文直接引用，避免“先画图再回填数字”。
-2. **第二阶段绘图**：数值检查通过后统一画图，每题至少 4–6 张覆盖主要分析维度；图内不写 `set_title`（标题由论文 `\caption{}` 承担）；图内文字必须是**可读字符串**——中文题可用中文或英文可读标签（同一图内尽量一致），**禁止直接把英文列名、变量名、聚类标签（如 `highK`、`Cluster_0`、`PC1`）当作图例**，必须先映射为完整可读标签（如 `高钾` / `High-K`）；美赛全英文。
+2. **第二阶段绘图**：数值检查通过后统一画图，每题至少 4–6 张覆盖主要分析维度；图内不写 `set_title`（标题由论文 `\caption{}` 承担）；导出前按“最终视觉检查”确认无缺字/乱码/方框、裁切和重叠。
 3. 已有 CSV/图片直接复用，不重复计算；输出文件与论文引用一一对应。
 
 该两阶段规则同样适用于 MATLAB 求解脚本：先完成全部计算并打印统计量，再统一 `apply_publication_style` 绘图。
