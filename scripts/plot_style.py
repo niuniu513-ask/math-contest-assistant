@@ -11,17 +11,11 @@ import unicodedata
 
 
 def _is_math_modeling_skill_root(path: Path) -> bool:
+    # 本技能的实际布局：SKILL.md/VERSION 在仓库根，scripts/ 直接挂在根下
     return (
         (path / "SKILL.md").is_file()
         and (path / "VERSION").is_file()
-        and (
-            path
-            / "references"
-            / "roles"
-            / "编程手"
-            / "scripts"
-            / "plot_style.py"
-        ).is_file()
+        and (path / "scripts" / "plot_style.py").is_file()
     )
 
 

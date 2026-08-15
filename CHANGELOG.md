@@ -2,6 +2,19 @@
 
 版本遵循语义化版本（SemVer）：`主版本.次版本.修订`。每次发布更新 `VERSION` 文件并在本文件追加记录；提交信息使用 conventional commits（`feat:`/`fix:`/`refactor:` 等，subject 简洁、≤72 字符、祈使语气，详细说明放正文）。
 
+## [1.5.0] - 2026-08-14
+
+新增内置 humanizer-zh 终稿自然化技能，加固执行沙箱，扩充机器学习算法资产，并建立核心脚本测试套件。
+
+- **feat**：内置 `tools/humanizer-zh/`（基于维基百科"AI 写作特征"综合指南的中文去 AI 味技能），替换外部 `humanizer_academic` 依赖；`SKILL.md` 分阶段加载表、`README.md`、`references/技能协同协议.md`、`references/论文写作工作流.md` 同步更新引用。
+- **feat**：`scripts/safe_executor.py` 沙箱加固——`sys.meta_path` 拦截 subprocess/socket/requests/urllib/http/ftplib/multiprocessing/ctypes 等模块导入；无条件拒绝 os 执行/系统级操作；文件系统修改操作改为"路径感知"（允许目录内放行以兼容 tempfile，允许目录之外拒绝）；修复 `_ALLOWED_DIRS` 逐字符遍历的隐患。
+- **fix**：`scripts/generate_docx.py` 代码块不再被静默跳过——按行扫描把代码块渲染为等宽字体段落（含未闭合围栏），围栏标记不泄漏到正文。
+- **feat**：`assets/07-机器学习算法说明.md` 扩充 9 个算法章节（逻辑回归/KNN/朴素贝叶斯/CART/SVM/GBDT-XGBoost/CNN/LSTM/自编码器），更新选择指南与参考文献。
+- **fix**：`scripts/plot_style.py` 技能根检测修复（此前指向不存在的 `references/roles/编程手/...` 旧结构，SKILL_ROOT 恒为 None）。
+- **fix**：`scripts/corpus_inventory.py` 赛题目录名参数化（`--questions-dir-name`，默认值不变）。
+- **test**：新增 `tests/test_safe_executor.py`（8 例）、`tests/test_figure_audit.py`（9 例）、`tests/test_generate_docx.py`（3 例）；`python -m unittest discover -s tests` 全套 28 例通过。
+- **docs**：`README.md` 更新依赖表（humanizer-zh 内置）、文件结构与开发测试说明。
+
 ## [1.4.9] - 2026-08-14
 
 修复中文字体选择未校验字形覆盖导致负号 −/℃ 缺字的问题。

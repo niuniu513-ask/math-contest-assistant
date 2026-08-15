@@ -214,6 +214,43 @@ def parse_markdown_to_sections(md_text: str) -> list[dict]:
 # 内容渲染
 # ============================================================
 
+def _split_content_blocks(lines: list[str]) -> list[tuple[str, object]]:
+    """把节内容行切分为 (kind, payload) 序列。
+
+    - kind 为 "para" 时，payload 是普通行文本，由调用方按空行切段落；
+    - kind 为 "code" 时，payload 是代码块内的行列表（保留空行、不含围栏）。
+    未闭合的代码围栏也会被保留，避免内容静默丢失。
+    """
+    blocks: list[tuple[str, object]] = []
+    buf: list[str] = []
+    code_buf: list[str] = []
+    in_code = False
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith('```'):
+            if in_code:
+                blocks.append(("code", code_buf))
+                code_buf = []
+                in_code = False
+            else:
+                if buf:
+                    blocks.append(("para", "\n".join(buf)))
+                    buf = []
+                in_code = True  # 围栏起始行（含语言标记）不渲染
+            continue
+        if in_code:
+            code_buf.append(line)
+        else:
+            buf.append(line)
+
+    if in_code:
+        blocks.append(("code", code_buf))
+    elif buf:
+        blocks.append(("para", "\n".join(buf)))
+    return blocks
+
+
 def render_section(doc: Document, section: dict, config: dict, figures_dir: str):
     """将一节内容渲染到 DOCX"""
     level = section['level']
@@ -228,30 +265,33 @@ def render_section(doc: Document, section: dict, config: dict, figures_dir: str)
     elif title and title != "正文":
         add_paragraph(doc, title, bold=True)
 
-    # 渲染内容
-    content_text = '\n'.join(section['content_lines'])
-
-    # 按段落分割
-    paragraphs_text = content_text.split('\n\n')
-
-    for para_text in paragraphs_text:
-        para_text = para_text.strip()
-        if not para_text:
+    # 渲染内容：按行扫描，代码块保留为等宽字体段落，其余按段落渲染
+    for kind, payload in _split_content_blocks(section['content_lines']):
+        if kind == "code":
+            # 代码块：等宽字体、无首行缩进，逐行保留（含空行）
+            para = doc.add_paragraph()
+            run = para.add_run()
+            code_lines = payload
+            for i, code_line in enumerate(code_lines):
+                if i > 0:
+                    run.add_break()
+                run.add_text(code_line)
+            run.font.name = config["fonts"]["code"]["name"]
+            run.font.size = config["fonts"]["code"]["size"]
             continue
 
-        # 跳过纯图片标记行
-        if para_text.startswith('[图片:') and len(para_text) < 100:
-            continue
+        # 普通段落：按空行切分
+        for para_text in payload.split('\n\n'):
+            para_text = para_text.strip()
+            if not para_text:
+                continue
 
-        # 处理内联 LaTeX 公式（保留 $...$ 原始文本，Word 中需用公式编辑器）
-        # 此处保留原文，用户可在 Word 中进一步编辑
-        cleaned = para_text
+            # 跳过纯图片标记行
+            if para_text.startswith('[图片:') and len(para_text) < 100:
+                continue
 
-        # 跳过代码块
-        if cleaned.startswith('```'):
-            continue
-
-        add_paragraph(doc, cleaned, first_indent=config.get("first_indent"))
+            # 内联 LaTeX 公式保留 $...$ 原始文本，Word 中可用公式编辑器进一步处理
+            add_paragraph(doc, para_text, first_indent=config.get("first_indent"))
 
     # 插入图片
     for img in section.get('images', []):

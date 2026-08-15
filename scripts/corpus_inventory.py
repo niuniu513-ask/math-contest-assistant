@@ -14,7 +14,7 @@ from pathlib import Path
 
 YEAR_RE = re.compile(r"(?:19|20)\d{2}")
 PROBLEM_RE = re.compile(r"(?<![A-Za-z])([A-E])(?:题|\d{2,3}|\b)", re.I)
-QUESTION_DIR_NAME = "1.历年国赛赛题（1992-2025）"
+DEFAULT_QUESTION_DIR_NAME = "1.历年国赛赛题（1992-2025）"
 
 
 def sha256_file(path: Path) -> str:
@@ -35,13 +35,13 @@ def infer_metadata(path: Path) -> tuple[str | None, str | None]:
     )
 
 
-def scan(root: Path, kind: str, include_hash: bool) -> list[dict]:
+def scan(root: Path, kind: str, include_hash: bool, questions_dir_name: str = DEFAULT_QUESTION_DIR_NAME) -> list[dict]:
     records = []
     if not root.is_dir():
         return records
     for path in sorted(item for item in root.rglob("*") if item.is_file()):
         relative = path.relative_to(root)
-        if kind == "award_paper" and QUESTION_DIR_NAME in relative.parts:
+        if kind == "award_paper" and questions_dir_name in relative.parts:
             continue
         year, problem = infer_metadata(relative)
         record = {
@@ -67,6 +67,11 @@ def main() -> int:
     parser.add_argument("--word-root", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--hash", action="store_true", help="计算全部文件 SHA-256（大型语料较慢）")
+    parser.add_argument(
+        "--questions-dir-name",
+        default=DEFAULT_QUESTION_DIR_NAME,
+        help="赛题目录名（用于排除获奖论文目录中嵌套的赛题副本），默认按当前语料布局",
+    )
     args = parser.parse_args()
 
     roots = (
@@ -84,7 +89,7 @@ def main() -> int:
         if not root.is_dir():
             missing.append(str(root))
             continue
-        records.extend(scan(root, kind, args.hash))
+        records.extend(scan(root, kind, args.hash, args.questions_dir_name))
 
     summary = {
         "schema_version": 1,

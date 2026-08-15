@@ -5,6 +5,14 @@
 
 用法:
     python safe_executor.py <script_path> --output-dir <dir> [--timeout <seconds>]
+
+沙箱边界（尽力而为的进程内隔离）：
+- 文件写入仅允许在 output-dir 与系统临时目录内；
+- 拦截 subprocess/socket/requests/urllib/http/ftplib/multiprocessing/ctypes 等模块导入；
+- 替换 os/shutil 的删除、移动、执行、网络类危险函数；
+- 强制超时。
+注意：进程内沙箱无法对抗有意的逃逸（如直接调用 C 扩展），
+需要强隔离时必须改用容器、虚拟机或受限子进程。
 """
 
 import argparse
@@ -25,7 +33,7 @@ def create_sandbox_wrapper(script_path: str, output_dir: str) -> str:
     script_abs = os.path.abspath(script_path)
     output_abs = os.path.abspath(output_dir)
 
-    wrapper_code = f'''
+    wrapper_template = r'''
 import sys
 import os
 import builtins
@@ -34,8 +42,8 @@ import warnings
 
 # --- 沙箱限制 ---
 
-# 限制文件写入范围
-_ALLOWED_DIRS = {repr(output_abs)}
+# 限制文件写入范围（元组形式，避免对字符串逐字符遍历）
+_ALLOWED_DIRS = ({allowed_dirs!r},)
 _ORIGINAL_OPEN = builtins.open
 
 def _sandboxed_open(file, mode='r', *args, **kwargs):
@@ -60,45 +68,113 @@ def _sandboxed_open(file, mode='r', *args, **kwargs):
                 allowed = True
         if not allowed:
             raise PermissionError(
-                f"Sandbox: 禁止写入 {{filepath}}。"
-                f"仅允许写入 {{_ALLOWED_DIRS}}"
+                f"Sandbox: 禁止写入 {filepath}。仅允许写入 {_ALLOWED_DIRS}"
             )
     return _ORIGINAL_OPEN(file, mode, *args, **kwargs)
 
 builtins.open = _sandboxed_open
 
-# 禁用危险操作
-DISABLED_MODULES = [
-    'os.system', 'os.popen', 'os.execv', 'os.execve', 'os.spawnv',
-    'subprocess', 'socket', 'requests', 'urllib', 'http',
-    'shutil.rmtree', 'shutil.move', 'os.remove', 'os.unlink',
-    'os.rmdir', 'os.removedirs',
-]
+# --- 强制禁用危险能力（导入拦截 + 危险函数替换）---
+# 进程内尽力而为的沙箱，阻止常见误用与危险样例；
+# 需要强隔离时必须改用容器或受限子进程。
 
-# 只警告不强制禁用（部分库内部会用到）
+import importlib.abc
+import shutil
+import tempfile
+
+_BLOCKED_MODULES = frozenset({
+    'subprocess', 'socket', 'requests', 'urllib', 'http', 'ftplib',
+    'telnetlib', 'multiprocessing', 'pynput', 'keyboard', 'ctypes',
+})
+
+class _BlockedImportFinder(importlib.abc.MetaPathFinder):
+    """拦截危险模块的导入（含 importlib.import_module 与 __import__ 路径）。"""
+    def find_spec(self, fullname, path=None, target=None):
+        root = fullname.split('.')[0]
+        if root in _BLOCKED_MODULES:
+            raise ImportError(
+                f"Sandbox: 模块 {fullname} 被禁用（网络/子进程/系统级操作）"
+            )
+        return None
+
+sys.meta_path.insert(0, _BlockedImportFinder())
+
+def _deny_operation(name):
+    def _deny(*args, **kwargs):
+        raise PermissionError(f"Sandbox: 危险操作 {name} 被禁用")
+    _deny.__name__ = name
+    return _deny
+
+# 允许读写的安全目录：output-dir + 系统临时目录（在 patch 前缓存，
+# 避免 tempfile 内部清理与路径检查互相递归）
+_TEMP_DIR = os.path.abspath(tempfile.gettempdir())
+_SAFE_DIRS = tuple(_ALLOWED_DIRS) + (_TEMP_DIR,)
+
+def _make_guarded_fileop(name, orig):
+    """路径感知的文件系统操作：允许目录内放行（兼容 tempfile 等标准库），
+    允许目录之外拒绝。"""
+    def _op(path, *args, **kwargs):
+        target = os.path.abspath(path)
+        if any(target.startswith(d) for d in _SAFE_DIRS):
+            return orig(path, *args, **kwargs)
+        raise PermissionError(
+            f"Sandbox: 危险操作 {name} 被禁用（目标在允许目录之外: {target}）"
+        )
+    _op.__name__ = name
+    return _op
+
+# 执行/系统级操作：无条件拒绝
+for _attr in (
+    'system', 'popen', 'startfile',
+    'execl', 'execle', 'execlp', 'execlpe', 'execv', 'execve',
+    'execvp', 'execvpe', 'spawnl', 'spawnle', 'spawnlp', 'spawnlpe',
+    'spawnv', 'spawnve', 'spawnvp', 'spawnvpe',
+    'kill', 'killpg',
+):
+    if hasattr(os, _attr):
+        setattr(os, _attr, _deny_operation(f"os.{_attr}"))
+
+# 文件系统修改操作：允许目录内放行，之外拒绝
+for _attr in (
+    'remove', 'unlink', 'rmdir', 'removedirs',
+    'rename', 'renames', 'replace', 'symlink', 'link',
+    'chmod', 'chown', 'chdir',
+):
+    if hasattr(os, _attr):
+        setattr(os, _attr, _make_guarded_fileop(f"os.{_attr}", getattr(os, _attr)))
+
+for _attr in ('rmtree', 'move'):
+    if hasattr(shutil, _attr):
+        setattr(shutil, _attr, _make_guarded_fileop(f"shutil.{_attr}", getattr(shutil, _attr)))
+
 warnings.filterwarnings("error", category=RuntimeWarning)
 
 print("=" * 60, flush=True)
 print("沙箱环境已激活", flush=True)
-print(f"允许写入目录: {{list(_ALLOWED_DIRS)}}", flush=True)
+print(f"允许写入目录: {list(_ALLOWED_DIRS)}", flush=True)
 print("=" * 60, flush=True)
 
 # --- 执行目标脚本 ---
-print(f"开始执行: {script_abs}", flush=True)
+print(f"开始执行: {script_abs_repr}", flush=True)
 print("-" * 60, flush=True)
 
 try:
-    with open({repr(script_abs)}, 'r', encoding='utf-8') as f:
+    with open({script_abs_repr}, 'r', encoding='utf-8') as f:
         code = f.read()
-    exec(compile(code, {repr(script_abs)}, 'exec'), {{'__name__': '__main__'}})
+    exec(compile(code, {script_abs_repr}, 'exec'), {'__name__': '__main__'})
     print("-" * 60, flush=True)
     print("脚本执行成功", flush=True)
 except Exception as e:
     print("-" * 60, flush=True)
     traceback.print_exc()
-    print(f"\\n脚本执行失败: {{e}}", flush=True)
+    print(f"\n脚本执行失败: {e}", flush=True)
     sys.exit(1)
 '''
+    wrapper_code = (
+        wrapper_template
+        .replace("{allowed_dirs!r}", repr(output_abs))
+        .replace("{script_abs_repr}", repr(script_abs))
+    )
 
     # 写入临时包装文件
     wrapper_path = os.path.join(output_dir, "_sandbox_wrapper.py")

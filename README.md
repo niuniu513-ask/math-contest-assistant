@@ -23,7 +23,7 @@
 - **内嵌方法库**：20 类代码模板（AHP/TOPSIS/灰色预测/ARIMA/PSO/GA 等）+ 7 类算法说明（含神经网络/LSTM）
 - **37 篇获奖论文分析**：2023-2025 国赛优秀论文写作范式提炼
 - **双格式输出**：LaTeX PDF + Word DOCX，正文数据图表结论一致
-- **降 AI 痕迹**：内置 ai_detector.py 启发式检测，两遍改写+自审流程
+- **降 AI 痕迹**：内置 `ai_detector.py` 启发式检测 + 内置 `humanizer-zh`（中文去 AI 味终稿自然化，含事实差异审计），两遍改写+自审流程
 - **内置基线模板**：CUMCM 完整模板 `cumcm-jayxin`（含 2026 官方格式与自带字体）与最小基线开箱即用，也可指定当届官方模板
 
 ## 质检门禁（双模式）
@@ -46,7 +46,8 @@
 | `scientific-toolkit-skill` | 科学计算、可视化 | 用户自行安装 |
 | `research-writing-skill` | 学术写作规范 | 用户自行安装 |
 | `office-academic-skill` | DOCX/PPT 排版 | 用户自行安装 |
-| `humanizer_academic` | 降 AI 写作痕迹 | [GitHub](https://github.com/matsuikentaro1/humanizer_academic) |
+
+> 降 AI 写作痕迹由**内置 `tools/humanizer-zh`** 承担（基于维基百科"AI 写作特征"综合指南的中文去 AI 味技能），无需外部安装；`scripts/ai_detector.py` 负责 AI 痕迹启发式自检。
 
 ### 环境依赖
 
@@ -128,20 +129,24 @@ math-contest-assistant/
 │   ├── 章节模板.md             #   论文章节推导范式
 │   ├── award-paper-patterns*.md #   37 篇获奖论文分析
 │   └── ...                     #   更多
-├── tools/                      # 工具技能（5 个）
+├── tools/                      # 工具技能（6 个）
 │   ├── docx/                   #   Word DOCX 生成/校验
 │   ├── latex/                  #   LaTeX 项目/编译/校验
 │   ├── pdf/                    #   PDF 读取/提取/OCR
 │   ├── xlsx/                   #   Excel 数据处理
-│   └── paper_search/           #   文献搜索
+│   ├── paper_search/           #   文献搜索
+│   └── humanizer-zh/           #   内置中文去 AI 味技能（终稿自然化）
 ├── assets/                     # 算法详细说明（7 类）
 ├── scripts/                    # Python/MATLAB 脚本（15 个）
+├── tests/                      # 单元测试套件
+│   ├── test_paper_content_audit.py
+│   ├── test_safe_executor.py
+│   ├── test_figure_audit.py
+│   └── test_generate_docx.py
 ├── test_smoke.py               # 核心脚本冒烟测试（python test_smoke.py）
 ├── LICENSE                     # MIT 许可证
 └── .gitignore
 ```
-
-## 使用方式
 
 在任意支持的 AI 编码助手中提及数学建模相关任务即可激活：
 
@@ -153,6 +158,18 @@ math-contest-assistant/
 也可以指定单阶段：
 - "只做题目分析，不写代码"
 - "只写论文，代码和结果已经有了"
+
+## 开发与测试
+
+```bash
+# 冒烟测试（需在技能根目录运行）
+python test_smoke.py
+
+# 完整单元测试（含论文内容审计、沙箱、图表审计、DOCX 渲染）
+python -m unittest discover -s tests
+```
+
+修改脚本或规范后运行以上测试；`paper_content_audit.py`、`safe_executor.py`、`figure_audit.py`、`generate_docx.py` 均有对应测试用例。改动发布前按 [CHANGELOG.md](CHANGELOG.md) 更新版本号与记录。
 
 ## 输出产物
 
