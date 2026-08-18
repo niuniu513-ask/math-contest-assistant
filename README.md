@@ -2,7 +2,7 @@
 
 数学建模竞赛全流程辅助 Agent Skill，支持 **Claude Code / Cursor / Copilot / Codex CLI / Windsurf** 等 AI 编码助手。
 采用 **建模手 → 编程手 → 论文手** 三阶段流程，每阶段配备独立质检门禁（M1/P1/P2/W1/W2）。
-输出符合国赛(CUMCM)或美赛(MCM/ICM)格式的完整论文(.docx + .pdf)。
+默认输出 Word 论文草稿；用户显式要求时生成 LaTeX/PDF，或同时生成两种格式。
 
 ## 兼容性
 
@@ -20,11 +20,18 @@
 
 - **三阶段流程**：建模手（破题+选模型）→ 编程手（求解+可视化）→ 论文手（写作+排版+降AI）
 - **双模式质检**：模式 A（独立 Agent 验收 M1/P1/P2/W1/W2）/ 模式 B（清单自审）
+- **Claim–Evidence Matrix**：W1 前逐项绑定主张、公式、结果字段、图表、代码和验证，缺证据不得进入正文
 - **内嵌方法库**：20 类代码模板（AHP/TOPSIS/灰色预测/ARIMA/PSO/GA 等）+ 7 类算法说明（含神经网络/LSTM）
 - **37 篇获奖论文分析**：2023-2025 国赛优秀论文写作范式提炼
-- **双格式输出**：LaTeX PDF + Word DOCX，正文数据图表结论一致
+- **论文格式分支**：默认 Word DOCX；显式要求时生成 LaTeX/PDF；双格式共用同一证据源
 - **降 AI 痕迹**：内置 `ai_detector.py` 启发式检测 + 内置 `humanizer-zh`（中文去 AI 味终稿自然化，含事实差异审计），两遍改写+自审流程
 - **内置基线模板**：CUMCM 完整模板 `cumcm-jayxin`（含 2026 官方格式与自带字体）与最小基线开箱即用，也可指定当届官方模板
+
+## 使用边界
+
+开始任务前先阅读并复制 [使用指南.md](使用指南.md) 到项目目录。Skill 生成的分析、代码、图表、结果和论文均为草稿或参考材料，必须由队伍人工核对、改写，并按目标竞赛当届官方规则确认后才能使用。
+
+未指定格式时默认生成 `完整论文.docx`。LaTeX/PDF 仅在用户显式要求时生成；双格式交付必须共用同一份模型合同、权威结果和 Claim–Evidence Matrix。
 
 ## 质检门禁（双模式）
 
@@ -112,12 +119,19 @@ git clone https://github.com/<your-username>/math-contest-assistant.git ~/.winds
 
 竞赛类型、届次、题号 Skill 自动从赛题内容识别。历年赛题库、获奖论文库、LaTeX/Word 模板、配色方案等全部内嵌，零配置开箱即用。
 
+默认只运行 M1/P1/P2/W1/W2 固定质检。以下协作仅在用户明确启用时运行：
+
+- 官方规则核验、附件盘点、文献与模型族调研；
+- 隔离算法原型、独立实验批次；
+- Python/MATLAB 对照实现、术语与英文表达核验。
+
 ## 文件结构
 
 ```
 math-contest-assistant/
 ├── SKILL.md                    # 主技能定义
 ├── README.md                   # 本文件
+├── 使用指南.md                 # 定位、边界和默认交付格式
 ├── references/                 # 参考文档（42 个 .md）
 │   ├── Subagent调度.md         #   模式 A 质检调度规则
 │   ├── 算法索引.md             #   算法速查路由
@@ -175,9 +189,9 @@ python -m unittest discover -s tests
 
 ```
 PROJECT_ROOT/
-├── 完整论文.docx            # Word 版本
-├── 完整论文.pdf             # LaTeX 编译版本
-├── 完整论文-LaTeX/          # LaTeX 源码项目
+├── 完整论文.docx            # 默认 Word 论文草稿
+├── 完整论文.pdf             # 用户显式要求时生成
+├── 完整论文-LaTeX/          # 用户显式要求时生成
 ├── code_and_figures.zip     # 代码 + 图表 + 日志
 ├── humanization_notes.md    # 降 AI 润色笔记
 └── results/                 # 中间结果
