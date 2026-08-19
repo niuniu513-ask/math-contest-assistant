@@ -17,6 +17,11 @@ import zipfile
 from pathlib import Path
 
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+
 REPO_ROOT = Path(os.environ.get("SMOKE_REPO_ROOT", Path(os.getcwd())))
 if not (REPO_ROOT / "SKILL.md").exists():
     REPO_ROOT = Path(__file__).resolve().parents[1]

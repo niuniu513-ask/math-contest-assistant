@@ -22,6 +22,12 @@ from docx.oxml import parse_xml
 import json
 
 
+# Windows 控制台默认代码页可能不是 UTF-8。论文正文不能依赖控制台区域设置。
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+
 # ============================================================
 # 格式配置
 # ============================================================
@@ -123,6 +129,11 @@ def add_paragraph(doc: Document, text: str, style_name: str = 'Normal',
     para = doc.add_paragraph(style=style_name)
     run = para.add_run(text)
 
+    # 仅设置 run.font.name 只覆盖西文字体；Word 在 Windows 上可能因此
+    # 用错误的东亚字体替换中文。显式写入三类字体槽，沿用 v1.3 的兼容策略。
+    selected_font = font_name or "宋体"
+    _set_run_font_slots(run, selected_font)
+
     if bold:
         run.bold = True
     if font_name:
@@ -136,6 +147,15 @@ def add_paragraph(doc: Document, text: str, style_name: str = 'Normal',
         para.paragraph_format.first_line_indent = first_indent
 
     return para
+
+
+def _set_run_font_slots(run, east_asia_font: str):
+    """显式设置 Word 的西文与东亚字体槽，避免依赖系统区域设置。"""
+    r_fonts = run._element.get_or_add_rPr().get_or_add_rFonts()
+    latin_font = "Times New Roman" if east_asia_font in {"宋体", "黑体"} else east_asia_font
+    r_fonts.set(qn("w:ascii"), latin_font)
+    r_fonts.set(qn("w:hAnsi"), latin_font)
+    r_fonts.set(qn("w:eastAsia"), east_asia_font)
 
 
 # ============================================================
@@ -278,6 +298,7 @@ def render_section(doc: Document, section: dict, config: dict, figures_dir: str)
                 run.add_text(code_line)
             run.font.name = config["fonts"]["code"]["name"]
             run.font.size = config["fonts"]["code"]["size"]
+            _set_run_font_slots(run, config["fonts"]["code"]["name"])
             continue
 
         # 普通段落：按空行切分
@@ -375,9 +396,11 @@ def add_summary_page(doc: Document, sections: list[dict], config: dict):
             kw_run_label.bold = True
             kw_run_label.font.name = config["fonts"]["body"]["name"]
             kw_run_label.font.size = config["fonts"]["body"]["size"]
+            _set_run_font_slots(kw_run_label, config["fonts"]["body"]["name"])
             kw_run_content = kw_para.add_run(keywords)
             kw_run_content.font.name = config["fonts"]["body"]["name"]
             kw_run_content.font.size = config["fonts"]["body"]["size"]
+            _set_run_font_slots(kw_run_content, config["fonts"]["body"]["name"])
 
         # 分页
         doc.add_page_break()
@@ -392,8 +415,13 @@ def generate_docx(md_path: str, template: str, output_path: str, figures_dir: st
     config = get_config(template)
 
     # 读取 Markdown
-    with open(md_path, 'r', encoding='utf-8') as f:
-        md_text = f.read()
+    source_path = Path(md_path)
+    try:
+        md_text = source_path.read_text(encoding="utf-8-sig")
+    except UnicodeDecodeError:
+        # 兼容 Windows 编辑器导出的 GBK/GB18030 草稿；输出 DOCX 仍由
+        # python-docx 统一写为合法 UTF-8 XML。
+        md_text = source_path.read_text(encoding="gb18030")
 
     # 解析结构
     sections = parse_markdown_to_sections(md_text)
