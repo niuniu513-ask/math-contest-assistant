@@ -5,11 +5,25 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
 
 
 REQUIRED = {
-    "D1": ["data/数据质量报告.json", "data/处理决策日志.json", "data/处理前后统计对照.csv", ".work/data-contract.json", "数据预处理与探索分析.md"],
+    "D1": [
+        "题目/题目内容.txt",
+        "数据/数据摘要.txt",
+        "data/数据质量报告.json",
+        "data/处理决策日志.json",
+        "data/处理前后统计对照.csv",
+        ".work/data-contract.json",
+        "数据预处理与探索分析.md",
+    ],
     "B1": [".work/baseline-registry.json", "results/baselines"],
     "M1": [".work/model-contract.json", ".work/model-complexity.json"],
 }

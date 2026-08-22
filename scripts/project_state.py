@@ -11,6 +11,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
+
 STAGES = (
     "intake",
     "data",
@@ -95,6 +101,10 @@ def cmd_init(args: argparse.Namespace) -> int:
         "assumptions": [],
         "open_issues": [],
         "decisions": [],
+        "checkpoint": None,
+        "steps": [],
+        "last_step": None,
+        "last_error": None,
         "artifacts": {},
         "gates": {},
         "history": [{"at_utc": timestamp, "event": "init", "stage": args.stage}],
@@ -177,6 +187,26 @@ def cmd_artifact(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_checkpoint(args: argparse.Namespace) -> int:
+    project, state_path = project_paths(args.project_root)
+    state = load_state(state_path)
+    timestamp = now_utc()
+    step = args.step.strip() or state.get("last_step") or state["stage"]
+    entry = {
+        "step": step,
+        "at_utc": timestamp,
+        "note": args.note or "",
+        "files": [str(p) for p in args.artifacts],
+    }
+    state["checkpoint"] = entry
+    state["last_step"] = step
+    state["last_error"] = None
+    state["history"].append({"at_utc": timestamp, "event": "checkpoint", "step": step})
+    save_state(state_path, state)
+    print(json.dumps(entry, ensure_ascii=False))
+    return 0
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     project, state_path = project_paths(args.project_root)
     state = load_state(state_path)
@@ -191,6 +221,9 @@ def cmd_status(args: argparse.Namespace) -> int:
         "stage": state["stage"],
         "mode": state["mode"],
         "next_action": state.get("next_action"),
+        "last_step": state.get("last_step"),
+        "last_error": state.get("last_error"),
+        "checkpoint": state.get("checkpoint"),
         "gates": state.get("gates", {}),
         "artifact_drift": drift,
         "ok": not drift,
@@ -238,6 +271,13 @@ def build_parser() -> argparse.ArgumentParser:
     artifact.add_argument("--name")
     artifact.add_argument("--purpose", default="")
     artifact.set_defaults(func=cmd_artifact)
+
+    checkpoint = commands.add_parser("checkpoint", help="记录当前检查点")
+    checkpoint.add_argument("--project-root", required=True)
+    checkpoint.add_argument("--step")
+    checkpoint.add_argument("--note", default="")
+    checkpoint.add_argument("--artifacts", action="append", default=[])
+    checkpoint.set_defaults(func=cmd_checkpoint)
 
     status = commands.add_parser("status", help="显示状态并检查产物漂移")
     status.add_argument("--project-root", required=True)

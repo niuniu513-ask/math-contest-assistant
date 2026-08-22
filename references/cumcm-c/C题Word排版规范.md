@@ -12,3 +12,12 @@
 - Word 与 PDF 的内容、页码、公式、图表和参考文献必须一致。
 
 最终先运行 `scripts/docx_style_audit.py`，再逐页渲染检查。审计不替代视觉检查。
+
+## LaTeX 版本
+
+- 表格统一 `longtable` 与居中 `p` 列，列宽比例总和必须按列数预留 `tabcolsep` 余量，避免 `Overfull hbox`；
+- `caption` 单独一行，`label` 后紧跟换行；跨页表使用 `endfirsthead/endhead/endfoot` 保持表头；
+- 章节之间不人为 `newpage`，摘要结束标签用于自动页码检查；
+- 编译循环直到 `Error` 为 0，并检查 `Overfull/Underfull/Float too large`；
+- 使用 `\hypersetup{allcolors=black}` 保持链接黑色，灰度打印可辨；
+- 最终运行 `scripts/latex_page_audit.py` 检查摘要一页。

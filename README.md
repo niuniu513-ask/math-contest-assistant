@@ -13,6 +13,9 @@
 - **论文深度**：正文内部目标为 25–30 页，通常包含 20–35 个有效编号公式、12–18 幅有效图和 8–12 张核心表；这些区间用于发现论证缺口，不用于机械凑数。
 - **统一排版**：正文性文字统一黑色，中文正文使用宋体，英文和数字优先使用 Times New Roman，并提供 DOCX 样式审计。
 - **可恢复执行**：状态、门禁、产物哈希、运行日志和复现命令持续记录，失败后从有效检查点继续。
+- **输入预读**：PDF、XLSX 首次解析后生成摘要，后续复用，避免重复读取大附件。
+- **可视化合同**：默认统一 matplotlib 字体、DPI、边框和先算后画规则，图内不写标题，图表按问题目录归档，并检查空白、重复和灰度可辨。
+- **论文写作**：按“分析与准备 → 建模与求解 → 结果与解读”分问推进，公式形成完整推导链，摘要目标一页，参考文献必须被正文引用。
 
 ## 工作模式
 
@@ -157,6 +160,9 @@ python -m py_compile scripts/project_state.py scripts/c_gate_audit.py scripts/do
 python scripts/c_gate_audit.py <PROJECT_ROOT> --gate D1
 python scripts/c_gate_audit.py <PROJECT_ROOT> --gate B1
 python scripts/docx_style_audit.py <FINAL.docx> --strict
+python scripts/preread_inputs.py <PROJECT_ROOT>
+python scripts/c_plot_contract_audit.py <PROJECT_ROOT>
+python scripts/latex_page_audit.py <PROJECT_ROOT>
 ```
 
 `c_gate_audit.py` 检查门禁产物是否存在且非空；它不能替代数据内容、模型合理性和论文质量的人工或独立审查。

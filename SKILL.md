@@ -1,6 +1,6 @@
 ---
 name: math-contest-assistant-c
-description: 全国大学生数学建模竞赛 C 题优化版辅助技能，继承 math-contest-assistant 的附件审计、建模、编程、验证、图表、论文、Word/LaTeX 与复现能力，并强化数据预处理前置、简单基线和模型复杂度控制。可单独完成数据处理、建模、代码与可视化、论文写作，也可运行完整流程。用户提到国赛 C 题、CUMCM C 题、数据驱动型国赛题或要求完成 C 题建模论文时使用。
+description: 全国大学生数学建模竞赛 C 题优化版辅助技能，继承 math-contest-assistant 的附件审计、建模、编程、验证、图表、论文、Word/LaTeX 与复现能力，并强化输入预读、数据预处理前置、简单基线、模型复杂度控制、可视化合同和论文推导链。可单独完成数据处理、建模、代码与可视化、论文写作，也可运行完整流程。用户提到国赛 C 题、CUMCM C 题、数据驱动型国赛题或要求完成 C 题建模论文时使用。
 ---
 
 # 国赛 C 题全流程建模
@@ -10,8 +10,12 @@ description: 全国大学生数学建模竞赛 C 题优化版辅助技能，继�
 ## 1. 首次动作
 
 1. 确定 `SKILL_ROOT` 和用户项目 `PROJECT_ROOT`。输入保持只读，产物只写入项目目录。
-2. 读取 `使用指南.md`、`references/cumcm-c/C题自主解题协议.md`，盘点题面、附件、模板和已有产物。
-3. 初始化或恢复状态：
+2. 读取 `使用指南.md`、`references/cumcm-c/C题自主解题协议.md` 和 `references/cumcm-c/输入预读与数据摘要.md`，盘点题面、附件、模板和已有产物。
+3. 生成输入预读摘要（长期运行前已有且哈希未变时复用），再初始化或恢复状态：
+
+```powershell
+python "<SKILL_ROOT>/scripts/preread_inputs.py" "<PROJECT_ROOT>"
+```
 
 ```powershell
 python "<SKILL_ROOT>/scripts/project_state.py" init --project-root "<PROJECT_ROOT>" --mode full
@@ -44,6 +48,8 @@ python "<SKILL_ROOT>/scripts/project_state.py" status --project-root "<PROJECT_R
 ## 3. 数据必须前置
 
 只允许先读题面以理解附件语义；正式主模型不得在 D1 前冻结。读取 `references/cumcm-c/数据预处理与D1门禁.md`，并至少回答：
+
+先运行输入预读脚本并读取对应摘要；原始 PDF、DOCX 和 XLSX 只完整解析一次，之后优先使用 `题目/题目内容.txt` 与 `数据/数据摘要.txt`。
 
 - 数据结构、字段、单位、样本和时空范围是什么；
 - 缺失、重复、异常、冲突、格式错误和时间泄漏是否存在；
@@ -97,13 +103,19 @@ python "<SKILL_ROOT>/scripts/project_state.py" init --project-root "<PROJECT_ROO
 
 ## 6. 编程、求解与验证
 
-沿用 `references/编程工作流程.md`、`references/编程质检清单.md` 和原有 Python/MATLAB 规范。主模型代码必须来自 `.work/model-contract.json`，先最小闭环再全量计算，固定随机种子并生成 `results/复现清单.json`。
+沿用 `references/编程工作流程.md`、`references/编程质检清单.md`、`references/cumcm-c/C题图表与可视化规范.md` 和 `references/cumcm-c/运行效率与止损.md`。主模型代码必须来自 `.work/model-contract.json`，先最小闭环再全量计算，固定随机种子并生成 `results/复现清单.json`。
+
+- 每个子问题独立目录：`求解/问题X/图片/` 与 `求解/问题X/结果/`；问题间用处理后 CSV 流转。
+- 脚本默认引用 `assets/python_common.py` 或等价 UTF-8 配置；Windows 输出统一 UTF-8。
+- 先完成计算，打印 `min/max/mean/std/CV/amplitude`，再绘图；图中不写 `set_title()`。
+- 同一配置最多重试 3 次；长命令设置超时并保存恢复点。
+- 生成图表后登记来源与哈希，完成前运行 `figure_audit.py` 和 `c_plot_contract_audit.py`。
 
 验证随题型选择，不机械堆叠：预测与分类做合适的时序/样本外验证；评价模型做权重与排序稳定性；优化检查约束、界和基线；仿真检查极端情形与重复稳定性；机理模型检查量纲、守恒和收敛。主模型必须与同口径基线比较。
 
 ## 7. 论文内容
 
-读取 `references/cumcm-c/C题论文结构与公式.md`、原有论文写作工作流和 Claim–Evidence 规范。
+读取 `references/cumcm-c/C题论文结构与公式.md`、`references/cumcm-c/C题写作模板与分节规范.md`、原有论文写作工作流和 Claim–Evidence 规范。
 
 - 正文内部质量目标为 25–30 页，并始终服从当届官方上限；摘要原则上一页，正文不以目录、重复文字、空白、字号或代码截图凑页。
 - 完整论文通常有 20–35 个有效编号公式。数量用于发现推导缺口，不单独构成通过条件。
@@ -113,6 +125,9 @@ python "<SKILL_ROOT>/scripts/project_state.py" init --project-root "<PROJECT_ROO
 - 图表必须绑定真实来源、主张和关键数值；流程图、装饰图和重复信息不能替代结果证据。
 - 图表分析自然写入论证，禁止批量使用“对图 X 的解读如下”等固定句式。
 - 篇幅不足时依次补数据洞察、真实推导、数值算例、候选比较、样本外验证、误差分析和决策解释。
+- 每个子问题按“分析与准备 → 建模与求解 → 结果与解读”推进；数据预处理集中在问题一。
+- 公式链必须证明变量、假设、目标、约束、参数、求解和验证的来源，不以固定公式数或主观等级表替代证据。
+- 摘要按题型弹性分配篇幅，约 900 字并保持一页。
 
 ## 8. 格式与排版
 
@@ -126,6 +141,8 @@ python "<SKILL_ROOT>/scripts/project_state.py" init --project-root "<PROJECT_ROO
 
 使用 `scripts/docx_style_audit.py` 检查最终 Word 的非黑色文字和字体槽设置。
 
+LaTeX 路径使用 `references/cumcm-c/C题Word排版规范.md` 和 `tools/latex/SKILL.md`，表格优先 `longtable`，编译后检查 `Error/Overfull/Underfull/Float too large` 以及摘要页码。可使用 `scripts/latex_page_audit.py` 检查摘要一页。
+
 ## 9. 完成判定
 
 只有同时满足以下条件才可声明完成：
@@ -135,6 +152,7 @@ python "<SKILL_ROOT>/scripts/project_state.py" init --project-root "<PROJECT_ROO
 - 每问都有实际运行的简单基线，主模型复杂度有证据支持；
 - 核心结果来自真实运行，约束、单位、边界和不确定性已检查；
 - 公式、图表、表格、代码和论文结论一致且可追溯；
+- 图表已通过来源、风格、尺寸、灰度与重复检查；
 - 正文达到 25–30 页内部目标或记录合理例外，并符合官方上限；
 - 正文文字样式全黑，最终格式完成结构与逐页视觉检查；
 - 唯一复现命令有效，输入哈希、依赖、参数和随机种子已记录；
