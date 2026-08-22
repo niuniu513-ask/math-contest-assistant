@@ -1,209 +1,169 @@
-# 国赛 C 题数学建模辅助 Skill (math-contest-assistant-c)
+# 国赛 C 题数学建模辅助 Skill
 
-本项目由 `math-contest-assistant` 派生，是全国大学生数学建模竞赛 C 题优化分支。完整继承原 Skill 的工具、脚本、质检和复现能力，新增数据前置 D1、简单基线 B1、L0–L4 复杂度控制、C 题论文结构和 Word 全黑文字审计。
+`math-contest-assistant-c` 是 [`math-contest-assistant`](https://github.com/niuniu513-ask/math-contest-assistant) 的国赛 C 题优化分支。它继承通用版的附件读取、建模、编程、验证、图表、论文排版和复现能力，重点改进数据预处理前置、简单基线、模型复杂度控制和 C 题论文质量。
 
-支持只做数据处理、只做建模、只编写代码与可视化、只写论文，或运行完整流程。默认论文格式为 Word；用户显式要求时生成 LaTeX/PDF 或双格式。
+本分支不把 C 题等同于某一种固定模型，也不写死某一届赛题。模型必须由题面、附件数据和基线实验共同决定。
 
-## 兼容性
+## 核心改进
 
-| AI 助手 | 质检模式 | 安装方式 |
-|---------|---------|---------|
-| **Claude Code** | 模式 A（多 Agent 独立质检） | `npx skills add` 或 `~/.claude/skills/` |
-| **Cursor** | 模式 A（Agent 模式支持时） | `~/.cursor/skills/` 或项目 `.cursor/skills/` |
-| **Codex CLI** | 模式 B（清单自审） | `~/.codex/skills/` 或 `codex skills add` |
-| **GitHub Copilot** | 模式 B（清单自审） | `.github/copilot/skills/` 或项目根目录 |
-| **Windsurf** | 模式 B（清单自审） | `~/.windsurf/skills/` |
+- **数据前置**：正式定模前完成数据质量、处理决策、可辨识性和建模信号分析，通过 D1 门禁。
+- **简单基线**：预测、评价、优化、分类、聚类、仿真等子问题先运行对应基线，通过 B1 门禁。
+- **复杂度控制**：模型按 L0–L4 分级；复杂模型只有在修复基线关键缺陷且收益覆盖成本时才能升级。
+- **证据写作**：公式、图表、表格和结论均绑定真实代码输出与验证记录。
+- **论文深度**：正文内部目标为 25–30 页，通常包含 20–35 个有效编号公式、12–18 幅有效图和 8–12 张核心表；这些区间用于发现论证缺口，不用于机械凑数。
+- **统一排版**：正文性文字统一黑色，中文正文使用宋体，英文和数字优先使用 Times New Roman，并提供 DOCX 样式审计。
+- **可恢复执行**：状态、门禁、产物哈希、运行日志和复现命令持续记录，失败后从有效检查点继续。
 
-> **双模式设计**：支持多 Agent 的环境使用模式 A（独立质检 Agent 验收），不支持的环境使用模式 B（严格按清单逐项自审 + 输出证据）。详见 [质检门禁策略](#质检门禁双模式)。
+## 工作模式
 
-## 功能概览
+本 Skill 不只用于一次性生成完整论文。根据用户请求，可以选择以下任一模式：
 
-- **三阶段流程**：建模手（破题+选模型）→ 编程手（求解+可视化）→ 论文手（写作+排版+降AI）
-- **双模式质检**：模式 A（独立 Agent 验收 M1/P1/P2/W1/W2）/ 模式 B（清单自审）
-- **Claim–Evidence Matrix**：W1 前逐项绑定主张、公式、结果字段、图表、代码和验证，缺证据不得进入正文
-- **内嵌方法库**：20 类代码模板（AHP/TOPSIS/灰色预测/ARIMA/PSO/GA 等）+ 7 类算法说明（含神经网络/LSTM）
-- **37 篇获奖论文分析**：2023-2025 国赛优秀论文写作范式提炼
-- **论文格式分支**：默认 Word DOCX；显式要求时生成 LaTeX/PDF；双格式共用同一证据源
-- **降 AI 痕迹**：内置 `ai_detector.py` 启发式检测 + 内置 `humanizer-zh`（中文去 AI 味终稿自然化，含事实差异审计），两遍改写+自审流程
-- **内置基线模板**：CUMCM 完整模板 `cumcm-jayxin`（含 2026 官方格式与自带字体）与最小基线开箱即用，也可指定当届官方模板
+| 模式 | 适用请求 | 主要交付 |
+|---|---|---|
+| `data` | 只处理附件和分析数据 | 处理后数据、质量报告、探索分析、复现脚本 |
+| `model` | 只分析题目和建立模型 | 题目分析、基线结果、候选比较、模型合同 |
+| `code` | 根据模型编写和运行代码 | 源码、结果、验证记录、复现清单 |
+| `visualization` | 根据数据或结果制作图表 | 图表、源数据、生成脚本、图表清单 |
+| `paper` | 根据已有模型和结果写论文 | Word 论文；按需生成 LaTeX/PDF |
+| `full` | 从题面和附件完成全部工作 | 数据、模型、代码、图表、论文和复现材料 |
 
-## 使用边界
+单阶段模式只补齐不可缺少的上游证据，不会擅自扩展为完整论文。
 
-开始任务前先阅读并复制 [使用指南.md](使用指南.md) 到项目目录。Skill 生成的分析、代码、图表、结果和论文均为草稿或参考材料，必须由队伍人工核对、改写，并按目标竞赛当届官方规则确认后才能使用。
+## 完整流程
 
-未指定格式时默认生成 `完整论文.docx`。LaTeX/PDF 仅在用户显式要求时生成；双格式交付必须共用同一份模型合同、权威结果和 Claim–Evidence Matrix。
+```text
+intake
+→ data → D1
+→ parse → research
+→ baseline → B1
+→ model → M1
+→ prototype → P1
+→ solve → validate → P2
+→ evidence → W1
+→ write → format → W2
+→ package
+```
 
-## 质检门禁（双模式）
-
-本 Skill 的核心质量保障。根据运行环境自动选择：
-
-| 模式 | 适用环境 | 机制 |
-|------|---------|------|
-| **模式 A** | Claude Code、Cursor（支持 Agent 派发） | 独立质检 Agent 在 M1/P1/P2/W1/W2 节点验收，未通过不得进入下一阶段 |
-| **模式 B** | Codex CLI、Copilot、Windsurf（单 Agent） | 严格按 `references/建模质检清单.md` / `references/编程质检清单.md` / `references/论文自审框架.md` 逐项自审，输出每项检查结果和证据 |
-
-两种模式都不能用"已检查"一笔带过。
-
-## 前置依赖
-
-本 Skill 需配合以下 Skill 使用（均需单独安装到对应 Agent 的 skills 目录）：
-
-| Skill | 用途 | 安装 |
-|-------|------|------|
-| `scientific-toolkit-skill` | 科学计算、可视化 | 用户自行安装 |
-| `research-writing-skill` | 学术写作规范 | 用户自行安装 |
-| `office-academic-skill` | DOCX/PPT 排版 | 用户自行安装 |
-
-> 降 AI 写作痕迹由**内置 `tools/humanizer-zh`** 承担（基于维基百科"AI 写作特征"综合指南的中文去 AI 味技能），无需外部安装；`scripts/ai_detector.py` 负责 AI 痕迹启发式自检。
-
-### 环境依赖
-
-- **Python 3.9+**：一等实现路线之一——代码求解、DOCX 生成、图表审计（numpy/scipy/matplotlib/pandas/sklearn）
-- **MATLAB**：与 Python 同等重要的一等实现路线——备齐工具箱后按 `references/语言选型对比.md` 对当前题对比选型；随附 `check_matlab_env.m`、`apply_publication_style.m`、`audit_publication_figure.m`、`export_publication_figure.m` 与五类方法模板、配色/图表/示意图规范
-- **LaTeX (XeLaTeX + latexmk)**：PDF 论文编译
-- **Pandoc**：LaTeX → DOCX 转换
-
-> 语言选型：Python 与 MATLAB 同等重要，不设主路线/备选。进入编程前由 Agent 按评分卡对比两种语言对当前题的适配（算法覆盖、工具箱、复现、团队可辩护性、数据图出版、交付约束），结论写入模型合同；求解代码与数据图用选定语言，**参考图/示意图/流程图统一用 MATLAB 绘制**（风格统一）；可按需**双轨交付** Python + MATLAB 两套实现并交叉核验。
+支持独立 Agent 的环境可执行独立质检；不支持时按相同清单自审并明确标记 `LIMITED`，不能把自审写成独立验收。
 
 ## 安装
+
+本功能目前位于仓库的 `cumcm-c-optimized` 分支。安装时必须指定该分支，并使用独立目录名，避免覆盖通用版。
+
+### Codex
+
+```powershell
+git clone --branch cumcm-c-optimized --single-branch `
+  https://github.com/niuniu513-ask/math-contest-assistant.git `
+  "$env:USERPROFILE\.codex\skills\math-contest-assistant-c"
+```
 
 ### Claude Code
 
 ```bash
-# 方式一：npx skills
-npx skills add <your-username>/math-contest-assistant --global
-
-# 方式二：手动
-git clone https://github.com/<your-username>/math-contest-assistant.git ~/.claude/skills/math-contest-assistant
-
-# 方式三：解压 zip
-# 下载 math-contest-assistant.zip → 解压到 ~/.claude/skills/math-contest-assistant/
+git clone --branch cumcm-c-optimized --single-branch \
+  https://github.com/niuniu513-ask/math-contest-assistant.git \
+  ~/.claude/skills/math-contest-assistant-c
 ```
 
 ### Cursor
 
 ```bash
-mkdir -p ~/.cursor/skills
-git clone https://github.com/<your-username>/math-contest-assistant.git ~/.cursor/skills/math-contest-assistant
+git clone --branch cumcm-c-optimized --single-branch \
+  https://github.com/niuniu513-ask/math-contest-assistant.git \
+  ~/.cursor/skills/math-contest-assistant-c
 ```
 
-### Codex CLI
+其他支持 Agent Skills 的工具同样应把该分支安装为 `math-contest-assistant-c`，并确保目录根部直接包含 `SKILL.md`。
 
-```bash
-mkdir -p ~/.codex/skills
-git clone https://github.com/<your-username>/math-contest-assistant.git ~/.codex/skills/math-contest-assistant
+## 使用
+
+明确指定 skill 和工作范围最可靠：
+
+```text
+请使用 math-contest-assistant-c 完成这道国赛 C 题，只做数据预处理和探索分析。
 ```
 
-### GitHub Copilot
-
-参考 [Copilot Skills 文档](https://code.visualstudio.com/docs/copilot/copilot-skills)，
-将本目录放到项目 `.github/copilot/skills/` 下或全局配置中。
-
-### Windsurf
-
-```bash
-mkdir -p ~/.windsurf/skills
-git clone https://github.com/<your-username>/math-contest-assistant.git ~/.windsurf/skills/math-contest-assistant
+```text
+请使用 math-contest-assistant-c，根据已有数据完成题目分析、简单基线和模型选择，不写代码。
 ```
 
-### 通用：直接下载 zip
-
-1. 下载 `math-contest-assistant.zip`
-2. 解压到你的 Agent 对应 skills 目录
-
-## 使用方式
-
-用户只需提供：
-1. **赛题 PDF** — 放入工作目录
-2. **附件数据** — 放入工作目录 `data/`
-
-竞赛类型、届次、题号 Skill 自动从赛题内容识别。历年赛题库、获奖论文库、LaTeX/Word 模板、配色方案等全部内嵌，零配置开箱即用。
-
-完整模式运行 D1/B1/M1/P1/P2/W1/W2 门禁；单阶段模式只运行当前交付所需门禁并补齐不可缺少的上游证据。以下协作仅在用户明确启用时运行：
-
-- 官方规则核验、附件盘点、文献与模型族调研；
-- 隔离算法原型、独立实验批次；
-- Python/MATLAB 对照实现、术语与英文表达核验。
-
-## 文件结构
-
+```text
+请使用 math-contest-assistant-c，根据现有模型合同编写代码、运行求解并生成可视化。
 ```
+
+```text
+请使用 math-contest-assistant-c，根据已有模型、代码和真实结果完成 Word 论文。
+```
+
+```text
+请使用 math-contest-assistant-c，从题面和附件开始运行 full 完整流程。
+```
+
+建议同时提供题面、附件、输出目录、剩余时间、期望格式，以及是否允许在 M1 后直接继续。完整模式默认在 M1 后提交模型方案并等待确认；用户预先明确授权时可记录授权后继续。
+
+## 数据与模型原则
+
+- 预处理必须说明发现、方法、依据、影响范围和对模型结论的影响。
+- 每个子问题先运行简单基线；基线不一定写入正文，但必须保留结果。
+- 不因模型名称高级、获奖论文使用过或可以增加公式数量而升级模型。
+- 复杂模型必须与同口径基线比较关键指标、样本外表现、稳定性、运行成本和可解释性。
+- 结果必须来自真实运行；禁止用示例、占位数据或人工填写指标冒充主模型输出。
+- 当届官方规则和模板始终优先于本 Skill 的内部质量目标。
+
+## 论文与排版
+
+- 摘要原则上不超过一页，正文不生成目录。
+- 正文 25–30 页是内部质量目标，不是官方要求，也不是注水依据。
+- 公式必须形成从变量、假设、目标或方程、约束、求解到验证的完整推导链。
+- 图表必须来自真实数据或结果，绑定明确主张和关键数值。
+- 标题、正文、公式、图表标题、页码、参考文献和超链接显示文字统一为黑色。
+- 彩色只用于确有信息区分需要的图表，并保证灰度打印可辨。
+- 最终 Word 与 PDF 必须完成内容审计、样式审计和逐页视觉检查。
+
+## 主要文件
+
+```text
 math-contest-assistant-c/
-├── SKILL.md                    # 主技能定义
-├── README.md                   # 本文件
-├── 使用指南.md                 # 定位、边界和默认交付格式
-├── references/                 # 参考文档（42 个 .md）
-│   ├── Subagent调度.md         #   模式 A 质检调度规则
-│   ├── 算法索引.md             #   算法速查路由
-│   ├── code-generation-guide.md #  20 类方法代码模板（835行）
-│   ├── 可视化规范.md           #   Nature/SCI 出版级图表
-│   ├── 图表选择与避坑.md       #   选图四问 + 主动拦截问题清单
-│   ├── 英文化工作流.md         #   美赛三阶段英文化
-│   ├── 论文自审框架.md         #   4 类 40+ 检查项
-│   ├── 章节模板.md             #   论文章节推导范式
-│   ├── award-paper-patterns*.md #   37 篇获奖论文分析
-│   └── ...                     #   更多
-├── tools/                      # 工具技能（6 个）
-│   ├── docx/                   #   Word DOCX 生成/校验
-│   ├── latex/                  #   LaTeX 项目/编译/校验
-│   ├── pdf/                    #   PDF 读取/提取/OCR
-│   ├── xlsx/                   #   Excel 数据处理
-│   ├── paper_search/           #   文献搜索
-│   └── humanizer-zh/           #   内置中文去 AI 味技能（终稿自然化）
-├── assets/                     # 算法详细说明（7 类）
-├── scripts/                    # Python/MATLAB 脚本（15 个）
-├── tests/                      # 单元测试套件
-│   ├── test_paper_content_audit.py
-│   ├── test_safe_executor.py
-│   ├── test_figure_audit.py
-│   └── test_generate_docx.py
-├── test_smoke.py               # 核心脚本冒烟测试（python test_smoke.py）
-├── LICENSE                     # MIT 许可证
-└── .gitignore
+├── SKILL.md
+├── 使用指南.md
+├── references/
+│   └── cumcm-c/
+│       ├── C题自主解题协议.md
+│       ├── 数据预处理与D1门禁.md
+│       ├── 模型复杂度与基线.md
+│       ├── C题论文结构与公式.md
+│       └── C题Word排版规范.md
+├── scripts/
+│   ├── project_state.py
+│   ├── c_gate_audit.py
+│   ├── docx_style_audit.py
+│   └── ...
+├── tools/
+│   ├── docx/
+│   ├── latex/
+│   ├── pdf/
+│   ├── xlsx/
+│   ├── paper_search/
+│   └── humanizer-zh/
+├── assets/
+└── tests/
 ```
 
-在任意支持的 AI 编码助手中提及数学建模相关任务即可激活：
-
-- "帮我做 2025 国赛 C 题"
-- "分析这道数学建模题"
-- "写这个模型的论文"
-- "只跑代码出图"
-
-也可以指定单阶段：
-- "只做题目分析，不写代码"
-- "只写论文，代码和结果已经有了"
-
-## 开发与测试
+## 校验命令
 
 ```bash
-# 冒烟测试（需在技能根目录运行）
-python test_smoke.py
-
-# 完整单元测试（含论文内容审计、沙箱、图表审计、DOCX 渲染）
-python -m unittest discover -s tests
+python -m py_compile scripts/project_state.py scripts/c_gate_audit.py scripts/docx_style_audit.py
+python scripts/c_gate_audit.py <PROJECT_ROOT> --gate D1
+python scripts/c_gate_audit.py <PROJECT_ROOT> --gate B1
+python scripts/docx_style_audit.py <FINAL.docx> --strict
 ```
 
-修改脚本或规范后运行以上测试；`paper_content_audit.py`、`safe_executor.py`、`figure_audit.py`、`generate_docx.py` 均有对应测试用例。改动发布前按 [CHANGELOG.md](CHANGELOG.md) 更新版本号与记录。
+`c_gate_audit.py` 检查门禁产物是否存在且非空；它不能替代数据内容、模型合理性和论文质量的人工或独立审查。
 
-## 输出产物
+## 使用边界
 
-```
-PROJECT_ROOT/
-├── 完整论文.docx            # 默认 Word 论文草稿
-├── 完整论文.pdf             # 用户显式要求时生成
-├── 完整论文-LaTeX/          # 用户显式要求时生成
-├── code_and_figures.zip     # 代码 + 图表 + 日志
-├── humanization_notes.md    # 降 AI 润色笔记
-└── results/                 # 中间结果
-```
-
-## 行为准则
-
-1. 建模完成后**必须等待用户确认**才进入编程阶段
-2. 代码最多重试 3 次，超过标记问题而非死循环
-3. 降 AI 最多 3 轮（两遍流程 + 最多 1 轮补充）
-4. 所有计算结论来自实际运行结果，禁止编造数据
-5. 论文格式以当届官方规则为准，不以本 Skill 默认值替代
+Skill 生成的分析、代码、结果和论文需要参赛队人工核对、理解和改写。正式提交前必须确认数值、公式、引用、附件、匿名要求、文件大小和当届官方规则。该 Skill 不承诺竞赛成绩。
 
 ## License
 
