@@ -167,3 +167,11 @@ ewpage`、后台输出缓冲、代理子集偏差、结构卫生、MATLAB 降级
 - **完整 MATLAB 资产**：五类方法模板（`MATLAB代码生成规范.md`）、图表/配色/示意图规范、4 个 `.m` 出版脚本（`check_matlab_env`/`apply_publication_style`/`audit_publication_figure`/`export_publication_figure`）、国赛 Word 模板。
 - **质量门禁**：W1/W2 写作台账、三台账（推导/决策/对标）、三重敏感性、工程裕度、深度档 `lean/standard/full`、验证装置超参 M1 冻结。
 - **内容审计**：`paper_content_audit.py`（表号重号/悬空引用、正文策略与结果 CSV 交叉核对、DOCX 重复连续标题检测）。
+# 2.0.0-c
+
+- 从 `math-contest-assistant` 派生国赛 C 题优化分支，保留原有脚本、工具和门禁。
+- 数据预处理前置，新增 `data` 状态与 D1 数据理解门禁。
+- 新增 `baseline` 状态、B1 门禁、题型基线表和 L0–L4 复杂度升级合同。
+- 支持 `data`、`model`、`code`、`visualization`、`paper` 和 `full` 六种任务模式。
+- C 题正文内部目标调整为 25–30 页，强化有效公式、图表、表格和证据密度。
+- 新增 DOCX 黑色文字与字体槽审计、C 题门禁产物审计。

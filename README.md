@@ -1,8 +1,8 @@
-# 数学建模竞赛辅助 Skill (math-contest-assistant)
+# 国赛 C 题数学建模辅助 Skill (math-contest-assistant-c)
 
-数学建模竞赛全流程辅助 Agent Skill，支持 **Claude Code / Cursor / Copilot / Codex CLI / Windsurf** 等 AI 编码助手。
-采用 **建模手 → 编程手 → 论文手** 三阶段流程，每阶段配备独立质检门禁（M1/P1/P2/W1/W2）。
-默认输出 Word 论文草稿；用户显式要求时生成 LaTeX/PDF，或同时生成两种格式。
+本项目由 `math-contest-assistant` 派生，是全国大学生数学建模竞赛 C 题优化分支。完整继承原 Skill 的工具、脚本、质检和复现能力，新增数据前置 D1、简单基线 B1、L0–L4 复杂度控制、C 题论文结构和 Word 全黑文字审计。
+
+支持只做数据处理、只做建模、只编写代码与可视化、只写论文，或运行完整流程。默认论文格式为 Word；用户显式要求时生成 LaTeX/PDF 或双格式。
 
 ## 兼容性
 
@@ -119,7 +119,7 @@ git clone https://github.com/<your-username>/math-contest-assistant.git ~/.winds
 
 竞赛类型、届次、题号 Skill 自动从赛题内容识别。历年赛题库、获奖论文库、LaTeX/Word 模板、配色方案等全部内嵌，零配置开箱即用。
 
-默认只运行 M1/P1/P2/W1/W2 固定质检。以下协作仅在用户明确启用时运行：
+完整模式运行 D1/B1/M1/P1/P2/W1/W2 门禁；单阶段模式只运行当前交付所需门禁并补齐不可缺少的上游证据。以下协作仅在用户明确启用时运行：
 
 - 官方规则核验、附件盘点、文献与模型族调研；
 - 隔离算法原型、独立实验批次；
@@ -128,7 +128,7 @@ git clone https://github.com/<your-username>/math-contest-assistant.git ~/.winds
 ## 文件结构
 
 ```
-math-contest-assistant/
+math-contest-assistant-c/
 ├── SKILL.md                    # 主技能定义
 ├── README.md                   # 本文件
 ├── 使用指南.md                 # 定位、边界和默认交付格式

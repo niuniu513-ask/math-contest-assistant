@@ -103,6 +103,7 @@ def setup_document(doc: Document, config: dict):
     body_font = config["fonts"]["body"]
     font.name = body_font["name"]
     font.size = body_font["size"]
+    font.color.rgb = RGBColor(0, 0, 0)
     style.paragraph_format.line_spacing = config["line_spacing"]
 
     # 设置中文字体回退
@@ -128,6 +129,7 @@ def add_paragraph(doc: Document, text: str, style_name: str = 'Normal',
     """添加段落并设置格式"""
     para = doc.add_paragraph(style=style_name)
     run = para.add_run(text)
+    run.font.color.rgb = RGBColor(0, 0, 0)
 
     # 仅设置 run.font.name 只覆盖西文字体；Word 在 Windows 上可能因此
     # 用错误的东亚字体替换中文。显式写入三类字体槽，沿用 v1.3 的兼容策略。
@@ -396,10 +398,12 @@ def add_summary_page(doc: Document, sections: list[dict], config: dict):
             kw_run_label.bold = True
             kw_run_label.font.name = config["fonts"]["body"]["name"]
             kw_run_label.font.size = config["fonts"]["body"]["size"]
+            kw_run_label.font.color.rgb = RGBColor(0, 0, 0)
             _set_run_font_slots(kw_run_label, config["fonts"]["body"]["name"])
             kw_run_content = kw_para.add_run(keywords)
             kw_run_content.font.name = config["fonts"]["body"]["name"]
             kw_run_content.font.size = config["fonts"]["body"]["size"]
+            kw_run_content.font.color.rgb = RGBColor(0, 0, 0)
             _set_run_font_slots(kw_run_content, config["fonts"]["body"]["name"])
 
         # 分页

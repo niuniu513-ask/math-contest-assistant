@@ -13,14 +13,17 @@ from pathlib import Path
 
 STAGES = (
     "intake",
+    "data",
     "parse",
     "research",
+    "baseline",
     "model",
     "prototype",
     "solve",
     "validate",
     "evidence",
     "write",
+    "format",
     "package",
     "complete",
 )
@@ -202,7 +205,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     init = commands.add_parser("init", help="初始化状态")
     init.add_argument("--project-root", required=True)
-    init.add_argument("--mode", choices=("full", "model", "code", "paper"), default="full")
+    init.add_argument(
+        "--mode",
+        choices=("full", "data", "model", "code", "visualization", "paper"),
+        default="full",
+    )
     init.add_argument("--stage", choices=STAGES, default="intake")
     init.add_argument("--competition")
     init.add_argument("--year")
